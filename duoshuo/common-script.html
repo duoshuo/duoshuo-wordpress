@@ -1,0 +1,83 @@
+<style>
+#ds-export{
+	margin-bottom:3em;
+}
+.message-complete, .ds-exported .message-start, .ds-exporting .message-start, .status{
+	display:none;
+}
+.ds-exported .message-complete, .message-start, .ds-exporting .status{
+	display:block;
+}
+</style>
+<script type="text/javascript">
+function fireExport(){
+	var $ = jQuery;
+	$('#ds-export .status').empty();//.removeClass('ds-export-fail').html('处理中...');
+    $('#ds-export').addClass('ds-exporting');
+    $('#ds-export .status').html('开始同步 <img src="<?php echo self::$pluginDirUrl . 'images/waiting.gif';?>" />');
+    exportProgress();
+    return false;
+}
+
+function exportProgress(progress){
+	var $ = jQuery;
+	var rdigit = /\d/;
+    $.ajax({
+        url:ajaxurl,
+        data:{action: 'duoshuo_export'},
+        error:function(jqXHR, textStatus){
+            switch(textStatus){
+            case 'parsererror':
+            	alert('解析错误，联系多说客服帮助解决问题：' + jqXHR.responseText);
+            	break;
+            case "abort":
+            	break;
+            case "notmodified":
+            case "error":
+            case "timeout":
+            default:
+            	var dict = {
+            		notmodified	: '没有变化',
+                	error		: '出错了',
+                	timeout		: '超时了'
+                };
+                alert(dict[textStatus] + ', 联系多说客服帮助解决问题');
+            }
+        },
+        success:function(response) {
+        	if (response.code == 0){
+        		if (rdigit.test(response.progress) && !isNaN(response.progress)){
+        	    	$('#ds-export').removeClass('ds-exporting').addClass('ds-exported');
+        		}
+        		else{
+        			var lang = {'user':'用户', 'post':'文章', 'comment':'评论'}, progress = response.progress.split('/');
+        			$('#ds-export .status').html('正在同步' + lang[progress[0]] + '/' + progress[1] + ' <img src="<?php echo self::$pluginDirUrl . 'images/waiting.gif';?>" />');
+        			exportProgress();
+        		}
+        	}
+        	else{
+                alert(response.errorMessage);
+        	}
+            /*
+            switch (response.result) {
+                case 'success':
+                    status.html(response.msg).attr('rel', response.last_comment_id);
+                    switch (response.status) {
+                        case 'partial':
+                            dsq_import_comments();
+                            break;
+                        case 'complete':
+                            status.removeClass('dsq-importing').addClass('dsq-imported');
+                            break;
+                    }
+                break;
+                case 'fail':
+                    status.parent().html(response.msg);
+                    dsq_fire_import();
+                break;
+            }*/
+        },
+        dataType:'json'
+    });
+}
+</script>
