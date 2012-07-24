@@ -89,8 +89,8 @@ Stable tag: 0.7.2
 
 == Installation ==
 
-1. 在Wordpress 插件库中搜索"duoshuo", 下载并启用
-2. 在Wordpress “设置 -> 多说”中，绑定社交账号，设置二级域名并一键注册
+1. 在WordPress 插件库中搜索"duoshuo", 下载并启用
+2. 在WordPress “设置 -> 多说”中，绑定社交账号，设置二级域名并一键注册
 3. 同步评论到多说，并进行其他设置
    
 == Frequently Asked Questions ==

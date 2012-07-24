@@ -2,6 +2,8 @@
 
 class Duoshuo_Widget_Recent_Comments extends WP_Widget {
 	
+	protected $duoshuoPlugin;
+	
 	function __construct() {
 		$widget_ops = array('classname' => 'ds-widget-recent-comments', 'description' => '最新评论(由多说提供)' );
 		parent::__construct('ds-recent-comments', '最新评论(多说)', $widget_ops);
@@ -13,14 +15,16 @@ class Duoshuo_Widget_Recent_Comments extends WP_Widget {
 
 		//add_action( 'comment_post', array(&$this, 'flush_widget_cache') );
 		//add_action( 'transition_comment_status', array(&$this, 'flush_widget_cache') );
+		
+		$this->duoshuoPlugin = Duoshuo_WordPress::getInstance();
 	}
 
 	function recent_comments_style() {
 		if ( ! current_theme_supports( 'widgets' ) )// Temp hack #14876
 			return;
 		
-		if (!did_action('wp_head') && !Duoshuo::$scriptsPrinted){
-			Duoshuo::printScripts();
+		if (!did_action('wp_head') && !$this->duoshuoPlugin->scriptsPrinted){
+			$this->duoshuoPlugin->printScripts();
 		}
 	}
 	
@@ -176,8 +180,8 @@ class Duoshuo_Widget_Recent_Visitors extends WP_Widget {
 		if ( ! current_theme_supports( 'widgets' ) )// Temp hack #14876
 			return;
 		
-		if (!did_action('wp_head') && !Duoshuo::$scriptsPrinted){
-			Duoshuo::printScripts();
+		if (!did_action('wp_head') && !$this->duoshuoPlugin->scriptsPrinted){
+			$this->duoshuoPlugin->printScripts();
 		}
 	}
 	

@@ -1,10 +1,10 @@
-<link rel="stylesheet" href="<?php echo self::$pluginDirUrl; ?>styles.css" type="text/css" />
+<link rel="stylesheet" href="<?php echo $this->pluginDirUrl; ?>styles.css" type="text/css" />
 <?php
 $params = array(
 	'template'		=>	'wordpress',
-	'remote_auth'	=>	Duoshuo::remoteAuth(),
+	'remote_auth'	=>	$this->remoteAuth($this->userData()),
 );
-$adminUrl = 'http://' . Duoshuo::$shortName . '.' . Duoshuo::DOMAIN.'/admin/?'.http_build_query($params);
+$adminUrl = 'http://' . $this->shortName . '.' . self::DOMAIN.'/admin/?'.http_build_query($params);
 ?>
 <div class="wrap">
 <?php screen_icon(); ?>

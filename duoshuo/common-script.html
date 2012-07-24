@@ -14,7 +14,7 @@ function fireExport(){
 	var $ = jQuery;
 	$('#ds-export .status').empty();//.removeClass('ds-export-fail').html('处理中...');
     $('#ds-export').addClass('ds-exporting');
-    $('#ds-export .status').html('开始同步 <img src="<?php echo self::$pluginDirUrl . 'images/waiting.gif';?>" />');
+    $('#ds-export .status').html('开始同步 <img src="<?php echo $this->pluginDirUrl . 'images/waiting.gif';?>" />');
     exportProgress();
     return false;
 }
@@ -51,7 +51,7 @@ function exportProgress(progress){
         		}
         		else{
         			var lang = {'user':'用户', 'post':'文章', 'comment':'评论'}, progress = response.progress.split('/');
-        			$('#ds-export .status').html('正在同步' + lang[progress[0]] + '/' + progress[1] + ' <img src="<?php echo self::$pluginDirUrl . 'images/waiting.gif';?>" />');
+        			$('#ds-export .status').html('正在同步' + lang[progress[0]] + '/' + progress[1] + ' <img src="<?php echo $this->pluginDirUrl . 'images/waiting.gif';?>" />');
         			exportProgress();
         		}
         	}

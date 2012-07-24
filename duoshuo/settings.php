@@ -1,11 +1,11 @@
-<link rel="stylesheet" href="<?php echo self::$pluginDirUrl; ?>styles.css" type="text/css" />
+<link rel="stylesheet" href="<?php echo $this->pluginDirUrl; ?>styles.css" type="text/css" />
 <div class="wrap">
 <?php screen_icon(); ?>
 <h2>多说评论框设置</h2>
 
 <?php try{
 $params = array('template'	=>	'wordpress');
-$content = Duoshuo::getHtml('settings', $params);?>
+$content = $this->getHtml('settings', $params);?>
 
 <form action="" method="post">
 <?php wp_nonce_field('duoshuo-options');?>
@@ -16,7 +16,7 @@ $content = Duoshuo::getHtml('settings', $params);?>
 <?php
 }	// end of try
 catch(Duoshuo_Exception $e){
-	Duoshuo::showException($e);
+	$this->showException($e);
 }?>
 
 <h3>高级设定</h3>
@@ -66,7 +66,7 @@ catch(Duoshuo_Exception $e){
 </div>
 
 <h3>意见反馈</h3>
-<p>你的意见是多说成长的原动力，<a href="http://blog.duoshuo.com/feedback-wordpress-<?php echo str_replace('.','-',Duoshuo::VERSION);?>/" target="_blank">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
+<p>你的意见是多说成长的原动力，<a href="http://blog.duoshuo.com/feedback-wordpress-<?php echo str_replace('.','-', self::VERSION);?>/" target="_blank">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
 
 <?php
 $services = array(
@@ -107,7 +107,7 @@ jQuery(function(){
 				image = 'http://static.duoshuo.com/images/top.jpg',
 				title = '多说评论插件',
 				url = 'http://duoshuo.com';
-			window.open('http://<?php echo self::$shortName . '.' . Duoshuo::DOMAIN;?>/share-proxy/?service=' + service + '&url=' + encodeURIComponent(url) + '&message=' + encodeURIComponent(message) + '&title=' + encodeURIComponent(title) + '&images=' + image,
+			window.open('http://<?php echo $this->shortName . '.' . self::DOMAIN;?>/share-proxy/?service=' + service + '&url=' + encodeURIComponent(url) + '&message=' + encodeURIComponent(message) + '&title=' + encodeURIComponent(title) + '&images=' + image,
 				'_blank',
 				'height=550,width=600,top=0,left=0,toolbar=no,menubar=no,resizable=yes,location=yes,status=no');
 			return false;

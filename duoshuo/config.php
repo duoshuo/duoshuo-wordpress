@@ -1,14 +1,14 @@
-<link rel="stylesheet" href="<?php echo self::$pluginDirUrl; ?>styles.css" type="text/css" />
+<link rel="stylesheet" href="<?php echo $this->pluginDirUrl; ?>styles.css" type="text/css" />
 <div class="wrap">
 <?php echo screen_icon();?>
-<?php if (!(self::$shortName && self::$secret)):
-$params = self::packageOptions() + array(
+<?php if (!($this->shortName && $this->secret)):
+$params = $this->packageOptions() + array(
 	'system'	=>	'wordpress',
 	'callback'	=>	admin_url('admin.php?page=duoshuo')
 );
 
-if (self::$shortName)
-	$params['short_name'] = self::$shortName;
+if ($this->shortName)
+	$params['short_name'] = $this->shortName;
 ?>
 <iframe src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" width="100%" height="600"></iframe>
 <?php else:?>

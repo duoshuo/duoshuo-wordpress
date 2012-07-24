@@ -2,8 +2,9 @@
 if (!isset($post))
 	global $post;
 
-if (!did_action('wp_head') && !Duoshuo::$scriptsPrinted){
-	Duoshuo::printScripts();
+$duoshuoPlugin = Duoshuo_WordPress::getInstance();
+if (!did_action('wp_head') && !$duoshuoPlugin->scriptsPrinted){
+	$duoshuoPlugin->printScripts();
 }
 
 if ($intro = get_option('duoshuo_comments_wrapper_intro'))
@@ -28,8 +29,8 @@ $threadId = get_post_meta($post->ID, 'duoshuo_thread_id', true);
 		$attribs .= ' data-' . str_replace('_','-',$key) . '="' . esc_attr($value) . '"';
 	?>
 <div class="ds-thread"<?php echo $attribs;?>></div>
-	<?php if (!defined('DUOSHUO_THREAD_INITIALIZED')):
-		define('DUOSHUO_THREAD_INITIALIZED', true);?>
+	<?php if (!$duoshuoPlugin->threadInitialized):
+		$duoshuoPlugin->threadInitialized = true;?>
 <script type="text/javascript">
 	if (typeof DUOSHUO !== 'undefined')
 		DUOSHUO.EmbedThread('.ds-thread');

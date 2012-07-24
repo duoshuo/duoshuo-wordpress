@@ -5,8 +5,8 @@
  * @author shen2
  *
  */
-class DuoshuoClient{
-	var $end_point = 'http://duoshuo.com/api/';
+class Duoshuo_Client{
+	var $end_point = 'http://api.duoshuo.com/';
 	var $format = 'json';
 	var $userAgent;
 	var $shortName;
@@ -22,7 +22,7 @@ class DuoshuoClient{
 		$this->remoteAuth = $remoteAuth;
 		$this->accessToken = $accessToken;
 		$this->http = new WP_Http();
-		$this->userAgent = 'WordPress/' . $wp_version . '|Duoshuo/'. Duoshuo::VERSION;
+		$this->userAgent = 'WordPress/' . $wp_version . '|Duoshuo/'. self::VERSION;
 	}
 	
 	/**
@@ -134,7 +134,6 @@ class DuoshuoClient{
 			if (isset($token['refresh_token'])) //	可能没有refresh_token
 				$this->refresh_token = $token['refresh_token'];
 		} else {
-			var_dump($response);var_dump($params);var_dump($token);	// 用来调试
 			throw new Duoshuo_Exception("get access token failed." . $token['error']);
 		}
 		
