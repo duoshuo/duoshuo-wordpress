@@ -23,7 +23,7 @@ class Duoshuo_Widget_Recent_Comments extends WP_Widget {
 		if ( ! current_theme_supports( 'widgets' ) )// Temp hack #14876
 			return;
 		
-		if (!did_action('wp_head') && !$this->duoshuoPlugin->scriptsPrinted){
+		if (!did_action('wp_head')){
 			$this->duoshuoPlugin->printScripts();
 		}
 	}
@@ -180,7 +180,7 @@ class Duoshuo_Widget_Recent_Visitors extends WP_Widget {
 		if ( ! current_theme_supports( 'widgets' ) )// Temp hack #14876
 			return;
 		
-		if (!did_action('wp_head') && !$this->duoshuoPlugin->scriptsPrinted){
+		if (!did_action('wp_head')){
 			$this->duoshuoPlugin->printScripts();
 		}
 	}

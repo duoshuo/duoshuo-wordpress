@@ -74,7 +74,7 @@ function duoshuo_admin_initialize(){
 			echo '<div class="updated"><p><strong>只要再<a href="' . admin_url('admin.php?page=duoshuo') . '">配置一下</a>多说帐号，多说就能开始为您服务了。</strong></p></div>';
 		}
 		
-		add_action('admin_notices', array($duoshuoPlugin, 'duoshuo_config_warning'));
+		add_action('admin_notices', 'duoshuo_config_warning');
 		return ;
 	}
 	
@@ -114,8 +114,15 @@ function duoshuo_admin_initialize(){
 	add_action('profile_update', array($duoshuoPlugin, 'syncUserToRemote'));
 	add_action('user_register', array($duoshuoPlugin, 'syncUserToRemote'));
 	
-	add_action('wp_dashboard_setup', array($duoshuoPlugin,'addDashboardWidget'));
+	add_action('wp_dashboard_setup', 'duoshuo_add_dashboard_widget');
 	
+	if (!is_numeric($duoshuoPlugin->getOption('synchronized'))){
+		function duoshuo_unsynchronized_notice(){
+			echo '<div class="updated"><p>上一次同步没有完成，<a href="' . admin_url('admin.php?page=duoshuo-settings') . '">点此继续同步</a></p></div>';
+		}
+		add_action('admin_notices', 'duoshuo_unsynchronized_notice');
+	}
+		
 	function addOriginalCommentsNotice(){
 		add_action('admin_notices', array($duoshuoPlugin, 'originalCommentsNotice'));
 	}
@@ -150,7 +157,8 @@ function duoshuo_initialize(){
 	if (is_active_widget(false, false, 'recent-comments'))
 		add_action('wp_footer', array($duoshuoPlugin, 'outputFooterCommentJs'));
 	
-	add_filter('comments_number', array($duoshuoPlugin, 'commentsText'));
+	if (get_option('duoshuo_cc_fix')) //直接输出HTML评论
+		add_filter('comments_number', array($duoshuoPlugin, 'commentsText'));
 		
 	add_action('trackback_post', array($duoshuoPlugin, 'exportOneComment'));
 	add_action('pingback_post', array($duoshuoPlugin, 'exportOneComment'));
@@ -188,7 +196,7 @@ function duoshuo_register_widgets(){
 function duoshuo_add_pages() {
 	global $duoshuoPlugin;
 	
-	if (empty($duoshuoPlugin->shortName) || empty($duoshuoPlugin->secret) || !is_numeric($duoshuoPlugin->getOption('synchronized'))){
+	if (empty($duoshuoPlugin->shortName) || empty($duoshuoPlugin->secret)){
 		add_object_page(
 			'安装',
 			'多说评论',
@@ -209,8 +217,16 @@ function duoshuo_add_pages() {
 		);
 		add_submenu_page(
 	         'duoshuo',//$parent_slug
-	         '评论框设置',//page_title
-	         '评论框设置',//menu_title
+	         '个性化设置',//page_title
+	         '个性化设置',//menu_title
+	         'manage_options',//权限
+	         'duoshuo-preferences',//menu_slug
+	         array($duoshuoPlugin, 'preferences')//function
+	    );
+		add_submenu_page(
+	         'duoshuo',//$parent_slug
+	         '高级选项',//page_title
+	         '高级选项',//menu_title
 	         'manage_options',//权限
 	         'duoshuo-settings',//menu_slug
 	         array($duoshuoPlugin, 'settings')//function
@@ -252,6 +268,7 @@ function duoshuo_register_settings(){
 	
 	register_setting('duoshuo', 'duoshuo_cron_sync_enabled');
 	register_setting('duoshuo', 'duoshuo_seo_enabled');
+	register_setting('duoshuo', 'duoshuo_cc_fix');
 	register_setting('duoshuo', 'duoshuo_social_login_enabled');
 	register_setting('duoshuo', 'duoshuo_comments_wrapper_intro');
 	register_setting('duoshuo', 'duoshuo_comments_wrapper_outro');

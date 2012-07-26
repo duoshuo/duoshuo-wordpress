@@ -2,7 +2,7 @@
 class Duoshuo_Abstract {
 	const DOMAIN = 'duoshuo.com';
 	const STATIC_DOMAIN = 'static.duoshuo.com';
-	const VERSION = '0.7.2';
+	const VERSION = '0.8';
 	
 	/**
 	 * 
@@ -33,25 +33,6 @@ class Duoshuo_Abstract {
 			return false;
 		
 		$this->userLogin($token);
-	}
-	
-	public function oauthBind(){
-		if (!isset($_GET['code']))
-			return false;
-		
-		$oauth = new Duoshuo_Client($this->shortName, $this->secret);
-		
-		$keys = array(
-			'code'	=> $_GET['code'],
-			'redirect_uri' => 'http://duoshuo.com/login-callback/weibo/',
-		);
-		
-		$token = $oauth->getAccessToken('code', $keys);
-		
-		if ($token['code'] != 0)
-			return false;
-		
-		$this->userBind($token);
 	}
 	
 	public function remoteAuth($user_data){

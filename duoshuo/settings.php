@@ -3,22 +3,6 @@
 <?php screen_icon(); ?>
 <h2>多说评论框设置</h2>
 
-<?php try{
-$params = array('template'	=>	'wordpress');
-$content = $this->getHtml('settings', $params);?>
-
-<form action="" method="post">
-<?php wp_nonce_field('duoshuo-options');?>
-<?php echo $content;?>
-<p class="submit"><input type="submit" name="submit" id="submit" class="button-primary" value="保存"></p>
-</form>
-
-<?php
-}	// end of try
-catch(Duoshuo_Exception $e){
-	$this->showException($e);
-}?>
-
 <h3>高级设定</h3>
 <form action="" method="post">
 <?php wp_nonce_field('duoshuo-local-options');?>
@@ -31,6 +15,10 @@ catch(Duoshuo_Exception $e){
 		<tr valign="top">
 			<th scope="row">SEO优化</th>
 			<td><input type="checkbox" name="duoshuo_seo_enabled" value="1" <?php if (get_option('duoshuo_seo_enabled')) echo ' checked="checked"';?>/>搜索引擎爬虫访问网页时，显示静态HTML评论</td>
+		</tr>
+		<tr valign="top">
+			<th scope="row">评论数修正</th>
+			<td><input type="checkbox" name="duoshuo_cc_fix" value="1" <?php if (get_option('duoshuo_cc_fix')) echo ' checked="checked"';?> />AJAX加载文章的评论数</td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">社交帐号登录</th>
@@ -51,9 +39,12 @@ catch(Duoshuo_Exception $e){
 
 <h3>数据同步</h3>
 <div id="ds-export">
-	<p class="message-start"><a href="javascript:void(0)" class="button" onclick="fireExport();return false;">同步评论到多说</a></p>
+	<p class="message-start"><a href="javascript:void(0)" class="button" onclick="fireExport();return false;">同步本地数据库中的评论到多说</a></p>
 	<p class="status"></p>
 	<p class="message-complete">同步完成</p>
+</div>
+<div id="ds-sync">
+	<p class="message-start"><a href="javascript:void(0)" class="button" onclick="fireExport();return false;">同步多说中的评论到本地数据库</a></p>
 </div>
 <?php include_once dirname(__FILE__) . '/common-script.html';?>
 

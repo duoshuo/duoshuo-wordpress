@@ -19,10 +19,6 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
 	protected $EMBED = false;
 	
-	protected $scriptsPrinted = false;
-	
-	public $threadInitialized = false;
-	
 	public $shortName;
 	
 	public $secret;
@@ -34,6 +30,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		$defaultOptions = array(
 			'duoshuo_cron_sync_enabled'		=>	1,
 			'duoshuo_seo_enabled'			=>	1,
+			'duoshuo_cc_fix'				=>	1,
 			'duoshuo_social_login_enabled'	=>	1,
 			'duoshuo_comments_wrapper_intro'=>	'',
 			'duoshuo_comments_wrapper_outro'=>	'',
@@ -69,56 +66,28 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		return update_option('duoshuo_' . $key, $value);
 	}
 	
+	public function deleteOption($key){
+		return delete_option('duoshuo_' . $key);
+	}
+	
 	public function updateUserMeta($userId, $metaKey, $metaValue){
-		if (function_exists('update_user_meta'))
-			update_user_meta($userId, $metaKey, $metaValue);
-		else
-			update_usermeta($userId, $metaKey, $metaValue);
+		return function_exists('update_user_meta')
+			? update_user_meta($userId, $metaKey, $metaValue)
+			: update_usermeta($userId, $metaKey, $metaValue);
 	}
 	
 	public function getUserMeta($userId, $metaKey, $single = false){
 		//get_user_meta 从3.0开始有效: get_usermeta($user->ID, $blog_prefix.'capabilities', true);
-		if (function_exists('get_user_meta'))
-			return get_user_meta($userId, $metaKey, true);
-		else
-			return get_usermeta($userId, $metaKey);
+		return function_exists('get_user_meta')
+			? get_user_meta($userId, $metaKey, true)
+			: get_usermeta($userId, $metaKey);
 	}
 	
 	public function get_blog_prefix(){
 		global $wpdb;
-		if (method_exists($wpdb,'get_blog_prefix'))
-			return $wpdb->get_blog_prefix();
-		else
-			return $wpdb->prefix;
-	}
-	
-	public function userBind($token){
-		global $wpdb;
-		
-		$user_id = $wpdb->get_var("SELECT user_id FROM {$wpdb->usermeta} WHERE meta_value = '$token[user_id]' AND meta_key = 'duoshuo_user_id'");
-		
-		nocache_headers();
-		if ($user_id === null){
-			//	TODO
-			//	如果站点开启注册
-			//	如果站点不开启注册，则把用户带回入口页
-			echo '用户不存在';
-		}
-		else{//登陆成功
-			$user_id = (int) $user_id;
-			
-			$this->updateUserMeta($user_id, 'duoshuo_access_token', $token['access_token']);
-			
-			wp_clear_auth_cookie();
-			wp_set_auth_cookie($user_id, true, is_ssl());
-			wp_set_current_user($user_id);
-		}
-		
-		if (isset($_GET['redirect_to'])){
-			// wordpress 采用的是redirect_to字段
-			wp_redirect($_GET['redirect_to']);
-			exit;
-		}
+		return method_exists($wpdb,'get_blog_prefix')
+			? $wpdb->get_blog_prefix()
+			: $wpdb->prefix;
 	}
 	
 	public function userLogin($token){
@@ -230,7 +199,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		include_once dirname(__FILE__) . '/manage.php';
 	}
 	
-	public function settings(){
+	public function preferences(){
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 			try{
 				$user = wp_get_current_user();
@@ -244,6 +213,10 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			catch(Duoshuo_Exception $e){
 				$this->showException($e);
 			}
+		include_once dirname(__FILE__) . '/preferences.php';
+	}
+	
+	public function settings(){
 		include_once dirname(__FILE__) . '/settings.php';
 	}
 	
@@ -347,12 +320,12 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function commentsText($comment_text, $number = null){
 	    global $post;
 	    
-	    $identifier = 'class="ds-comments-number" data-thread-identifier="' . htmlspecialchars($post->ID . ' ' . $post->guid) .'"';
+	    $attribs = 'class="ds-thread-count" data-thread-key="' . $post->ID .'"';
 	    if (preg_match('/^<([a-z]+)( .*)?>(.*)<\/([a-z]+)>$/i', $comment_text, $matches) && $matches[1] == $matches[4]){
-	    	return "<$matches[1] $identifier$matches[2]>$matches[3]</$matches[4]>";
+	    	return "<$matches[1] $attribs$matches[2]>$matches[3]</$matches[4]>";
 	    }
 	    else
-		    return "<var $identifier>$comment_text</var>";
+		    return "<span $attribs>$comment_text</span>";
 	}
 	
 	public function userData($userId = null){	// null 代表当前登录用户，0代表游客
@@ -413,6 +386,11 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 	 * 在wp_print_scripts 没有执行的时候执行最传统的代码
 	 */
 	public function printScripts(){
+		static $scriptsPrinted = false;
+		
+		if ($scriptsPrinted)
+			return;
+		
 		$duoshuo_shortname = 'static';?>
 <script type="text/javascript">
 var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
@@ -425,64 +403,18 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
 })();
 </script><?php
-		$this->scriptsPrinted = true;
+		$scriptsPrinted = true;
 	}
 	
 	public function outputFooterCommentJs() {
-		
-if (!did_action('wp_head') && !$this->scriptsPrinted){
-	$this->printScripts();
-}?>
+		if (!did_action('wp_head'))
+			$this->printScripts();
+?>
 <script type="text/javascript">
 	DUOSHUO.RecentCommentsWidget('.widget_recent_comments #recentcomments', {template : 'wordpress'});
 </script>
 	<?php
 	}
-	
-	/*
-	 * 不再使用identifier的方法
-	 * 而使用重定向的方法
-	static function login($userLogin){
-		$user = get_user_by('login', $userLogin);
-		
-		$accessToken = $this->getUserMeta($user->ID, 'duoshuo_access_token');
-		
-		if (empty($accessToken))
-			return;
-		
-		$query = array(
-			'redirect_uri'=> !empty( $_REQUEST['redirect_to'] ) ? $_REQUEST['redirect_to'] : admin_url(),
-			'access_token'=>$accessToken,
-			'sso'		=>	1,
-		);
-		$redirectUrl = 'http://' . $this->shortName . '.duoshuo.com/local-login/?' . http_build_query($query, null, '&');
-		
-		wp_redirect( $redirectUrl );
-		exit;
-	}
-	
-	static function buildSignature($string){
-		return base64_encode(hash_hmac('sha1', $string, $this->secret, true));
-	}
-
-	static function loginUser($userId, $unique){
-		$params = array(
-			'short_name'	=>	$this->shortName,
-			'local_identity'=>	$userId,
-			'unique'		=>	$unique,
-			'signature'		=>	self::buildSignature($userId)
-		);
-		
-		try{
-			$apiResponse = $this->getClient()->request('POST', 'users/localLogin', $params);
-			
-			if (isset($apiResponse['response']['user_id']))
-				$this->updateUserMeta($userId, 'duoshuo_user_id', $apiResponse['response']['user_id']);
-		}
-		catch(Duoshuo_Exception $e){
-			
-		}
-	}*/
 	
 	public function loginForm(){
 		$redirectUri = add_query_arg(array('action'=>'duoshuo_login', 'redirect_to'=>urlencode(admin_url())), site_url('wp-login.php', 'login'));?>
@@ -491,12 +423,7 @@ if (!did_action('wp_head') && !$this->scriptsPrinted){
 if (window.duoshuoQuery && duoshuoQuery.sso)
 	duoshuoQuery.sso.login = <?php echo json_encode($redirectUri);?>;
 </script>
-<?php /*
-function updateDuoshuoUnique(unique){
-	document.write('<p><label style="font-size:12px;"><input name="login_duoshuo" type="checkbox" value="' + unique + '" tabindex="85" checked="checked" /> 同时登录多说</label></p>');
-}
-<script src="http://<?php echo self::DOMAIN;?>/identifier.js?callback=updateDuoshuoUnique&<?php echo time();?>"></script>
-*/
+<?php
 	}
 
 	public function connectSite(){
@@ -610,11 +537,11 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		}
 		
 		$data = array(
-			'source_user_id'=>	$userData->ID,
-			'name'			=>	$userData->display_name,
-			'email'			=>	$userData->user_email,
-			'url'			=>	$userData->user_url,
-			'created_at'	=>	$userData->user_registered,
+			'key'		=>	$userData->ID,
+			'name'		=>	$userData->display_name,
+			'email'		=>	$userData->user_email,
+			'url'		=>	$userData->user_url,
+			'created_at'=>	$userData->user_registered,
 		);
 		
 		$roleMap = array(
@@ -654,7 +581,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		$akismet_api_key = get_option('wordpress_api_key');
 		if ($akismet_api_key)
 			$options['akismet_api_key'] = $akismet_api_key;
-		$options['plugin_dir_url'] = $this->pluginDirUrl;
+		$options['local_api_url'] = $this->pluginDirUrl . 'api.php';
 		
 		return $options;
 	}
@@ -682,7 +609,6 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			$this->updateSite();
 		
 		//'system_theme'=>get_current_theme(),
-		//'plugin_dir_url'=>$this->pluginDirUrl,
 	}
 	
 	/**
@@ -827,8 +753,8 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			'type'		=>	$post->post_type,
 			'meta'		=>	json_encode($meta),
 			'source'	=>	'wordpress',
-			'source_author_id'=>$post->post_author,
-			'source_thread_id'=>$post->ID,
+			'author_key'=>	$post->post_author,
+			'thread_key'=>	$post->ID,
 		);
 		
 		if (!class_exists('nggLoader') || class_exists('nggRewrite'))
@@ -908,47 +834,15 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		return $remoteResponse;
 	}
 	
-	static function syncCommentsToLocal(){
-		update_option('_duoshuo_sync_lock', time());
-		
-		$last_post_id = $this->getOption('last_post_id');
-		
-		$params = array(
-			'start_id' => $last_post_id,
-            'limit' => 20,
-            'order' => 'asc',
-			'sources'=>'duoshuo,anonymous'
-		);
-		
-		$client = $this->getClient();
-		
-		$response = $client->request('GET', 'sites/listPosts', $params);
-		
-		$imported = self::_syncCommentsToLocal($response['response']);
-		$client->request('POST', 'posts/imported', $imported);
-	
-		$max_post_id = 0;
-		foreach($response['response'] as $post)
-			if ($post['post_id'] > $max_post_id)
-				$max_post_id = $post['post_id'];
-		
-		if ($max_post_id > $last_post_id)
-			update_option('duoshuo_last_post_id', $max_post_id);
-		
-		delete_option('_duoshuo_sync_lock');
-		
-		return $imported;
-	}
-	
 	/**
 	 * 从服务器pull评论到本地
 	 * 
 	 * @param array $posts
 	 */
-	static function _syncCommentsToLocal($posts){
+	public function createPost($post){
 		global $wpdb;
 		
-		$approvedMap = array(
+		static $approvedMap = array(
 			'pending'	=>	'0',
 			'approved'	=>	'1',
 			'deleted'	=>	'trash',
@@ -956,77 +850,101 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			'thread-deleted'=>'post-trashed',
 		);
 		
-		$threadMap = array();
-		$commentMap = array();
-		$userMap = array();
-		foreach($posts as $post){
-			$threadMap[$post['thread_id']] = null;
-			$commentMap[$post['parent_id']] = null;
-			$userMap[$post['author_id']] = null;
-			
-		}
-		unset($commentMap[0]);
+		$post_id = isset($post['thread_key'])
+			? $post['thread_key']
+			: $wpdb->get_var("SELECT post_id FROM $wpdb->postmeta WHERE meta_key = 'duoshuo_thread_id' AND meta_value = $post[thread_id]");
 		
-		$thread_ids = "'" . implode("', '", array_keys($threadMap)) . "'";
-		$results = $wpdb->get_results( "SELECT post_id, meta_value FROM $wpdb->postmeta WHERE meta_key = 'duoshuo_thread_id' AND meta_value IN ($thread_ids)");
-	    foreach ($results as $result)
-	        $threadMap[$result->meta_value] = $result->post_id;
+		if (!is_numeric($post_id))	//	找不到对应的文章
+			return;
 		
-	    $comment_ids = "'" . implode("', '", array_keys($commentMap)) . "'";
-	    $results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ($comment_ids)");
-		foreach ($results as $result)
-	        $commentMap[$result->meta_value] = $result->comment_id;
+		$data = array(
+			'comment_author'	=>	trim(strip_tags($post['author_name'])),
+	 		'comment_author_email'=>$post['author_email'],
+	 		'comment_author_url'=>	$post['author_url'], 
+	 		'comment_author_IP'	=>	$post['ip'],
+			'comment_date'		=>	$this->rfc3339_to_mysql($post['created_at']), 
+	 		'comment_date_gmt'	=>	$this->rfc3339_to_mysql_gmt($post['created_at']),
+			'comment_content'	=>	$post['message'], 
+	 		'comment_approved'	=>	$approvedMap[$post['status']],
+			'comment_agent'		=>	'Duoshuo/' . self::VERSION . ':' . $post['post_id'],
+			'comment_type'		=>	$post['type'],
+			'comment_post_ID'	=>	$post_id,
+			//'comment_karma'
+		);
+			
+		if ($post['parent_id']){
+			$parent_id = $wpdb->get_var( "SELECT comment_id FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value = $post[parent_id]");
 		
-		$user_ids = "'" . implode("', '", array_keys($userMap)) . "'";
-	    $results = $wpdb->get_results( "SELECT user_id, meta_value FROM $wpdb->usermeta WHERE meta_key = 'duoshuo_user_id' AND meta_value IN ($user_ids)");
-		foreach ($results as $result)
-	        $userMap[$result->meta_value] = $result->user_id;
-	    
-	    $imported = array();
-	    foreach($posts as $post){
-			
-			if (!$threadMap[$post['thread_id']]){
-				//skip
-				continue;
-			}
-			
-			$data = array(
-				'comment_author'	=>	trim(strip_tags($post['author_name'])),
-		 		'comment_author_email'=>$post['author_email'],
-		 		'comment_author_url'=>	$post['author_url'], 
-		 		'comment_author_IP'	=>	$post['ip'],
-				'comment_date'		=>	$this->rfc3339_to_mysql($post['created_at']), 
-		 		'comment_date_gmt'	=>	$this->rfc3339_to_mysql_gmt($post['created_at']),
-				'comment_content'	=>	$post['message'], 
-		 		'comment_approved'	=>	$approvedMap[$post['status']],
-				'comment_agent'		=>	'Duoshuo/' . self::VERSION . ':' . $post['post_id'],
-				'comment_type'		=>	$post['type'],
-				'comment_post_ID'	=>	$threadMap[$post['thread_id']],
-				//'comment_karma'
-			);
-			
-			if ($post['parent_id'] && $commentMap[$post['parent_id']])
-				$data['comment_parent'] = $commentMap[$post['parent_id']];
-			
-			if ($post['author_id'] && isset($userMap[$post['author_id']]))
-				$data['user_id'] = $userMap[$post['author_id']];
-			
-			if (isset($post['source_post_id']) && $post['source_post_id']){
-				$data['comment_ID'] = $post['source_post_id'];
-				wp_update_comment($data);
-			}
-			else{
-				$data['comment_ID'] = wp_insert_comment($data);
-			}
-			$imported['post_' . $post['post_id']] = $data['comment_ID'];
-			
-			update_comment_meta($data['comment_ID'], 'duoshuo_parent_id', $post['parent_id']);
-        	update_comment_meta($data['comment_ID'], 'duoshuo_post_id', $post['post_id']);
+			if (isset($parent_id))
+				$data['comment_parent'] = $parent_id;
 		}
 		
-		return $imported;
+		$author_id = isset($post['author_key'])
+			? $post['author_key']
+			: $wpdb->get_var( "SELECT user_id FROM $wpdb->usermeta WHERE meta_key = 'duoshuo_user_id' AND meta_value = $post[author_id]");
+		
+		if (is_numeric($author_id))
+			$data['user_id'] = $author_id;
+		
+		if (isset($post['post_key'])){
+			$data['comment_ID'] = $post['post_key'];
+			wp_update_comment($data);
+		}
+		else{
+			$data['comment_ID'] = wp_insert_comment($data);
+		}
+		
+		update_comment_meta($data['comment_ID'], 'duoshuo_parent_id', $post['parent_id']);
+        update_comment_meta($data['comment_ID'], 'duoshuo_post_id', $post['post_id']);
+        
+        return array($post_id);
 	}
 	
+	public function deleteForeverPost($postIdArray){
+		global $wpdb;
+		
+		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		
+		foreach ($results as $result)
+	        wp_delete_comment($result->comment_id, true);
+	    
+	    return array();
+	}
+	
+	public function deletePost($postIdArray){
+		global $wpdb;
+		
+		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		
+		foreach ($results as $result)
+	        wp_trash_comment($result->comment_id);
+	    
+	    return array();
+	}
+	
+	public function spamPost($postIdArray){
+		global $wpdb;
+		
+		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		
+		foreach($results as $result)
+			wp_spam_comment($result->comment_id);
+		
+		return array();
+	}
+	
+	public function approvePost($postIdArray){
+		global $wpdb;
+		
+		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		
+		foreach ($results as $result)
+			wp_set_comment_status($result->comment_id, 'approve');
+		
+		return array();
+	}
+	
+		
 	public function notices(){
 		foreach($this->errorMessages as $message)
 			echo '<div class="updated"><p><strong>'.$message.'</strong></p></div>';
@@ -1152,6 +1070,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function updateLocalOptions(){
 		update_option('duoshuo_cron_sync_enabled', isset($_POST['duoshuo_cron_sync_enabled']) ? 1 : 0);
 		update_option('duoshuo_seo_enabled', isset($_POST['duoshuo_seo_enabled']) ? 1 : 0);
+		update_option('duoshuo_cc_fix', isset($_POST['duoshuo_cc_fix']) ? 1 : 0);
 		update_option('duoshuo_social_login_enabled', isset($_POST['duoshuo_social_login_enabled']) ? 1 : 0);
 		update_option('duoshuo_comments_wrapper_intro', isset($_POST['duoshuo_comments_wrapper_intro']) ? stripslashes($_POST['duoshuo_comments_wrapper_intro']) : '');
 		update_option('duoshuo_comments_wrapper_outro', isset($_POST['duoshuo_comments_wrapper_outro']) ? stripslashes($_POST['duoshuo_comments_wrapper_outro']) : '');

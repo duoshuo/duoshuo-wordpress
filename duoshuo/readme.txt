@@ -4,7 +4,7 @@ Donate link: http://duoshuo.com/
 Tags: comments, social, share, spam, weibo, qzone, youyan, pinglunla, widget, 评论, 社会化, 分享, 微博, QQ, 腾讯, 新浪微博, 垃圾评论 
 Requires at least: 2.8
 Tested up to: 3.3.1
-Stable tag: 0.7.2
+Stable tag: 0.8
 
 追求最佳用户体验的社会化评论框，为中小网站提供新浪微博、QQ、人人、开心、豆瓣等多帐号登录并评论功能。
 

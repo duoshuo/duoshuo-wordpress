@@ -17,13 +17,6 @@ if (!headers_sent()) {
 	header('Content-Type: text/javascript; charset=utf-8');
 }
 
-define('DUOSHUO_PLUGIN_PATH', dirname(__FILE__));
-
-require DUOSHUO_PLUGIN_PATH . '/Exception.php';
-require DUOSHUO_PLUGIN_PATH . '/Client.php';
-require DUOSHUO_PLUGIN_PATH . '/Abstract.php';
-require DUOSHUO_PLUGIN_PATH . '/WordPress.php';
-
 if (!class_exists('Duoshuo_WordPress')){
 	$response = array(
 		'code'			=>	30,
@@ -33,9 +26,9 @@ if (!class_exists('Duoshuo_WordPress')){
 	exit;
 }
 
-require dirname(__FILE__) . '/LocalServer.php';
+require DUOSHUO_PLUGIN_PATH . '/LocalServer.php';
 
-$plugin = Duoshuo_Dedecms::getInstance();
+$plugin = Duoshuo_WordPress::getInstance();
 
 try{
 	if ($_SERVER['REQUEST_METHOD'] == 'POST'){
