@@ -48,7 +48,7 @@
 </div>
 <?php include_once dirname(__FILE__) . '/common-script.html';?>
 
-<div style="display:none">
+<div>
 <h3>卸载</h3>
 <form action="" method="post" onsubmit="return confirm('你确定要卸载多说评论插件吗？');">
 	<input type="hidden" name="action" value="duoshuo_uninstall" />

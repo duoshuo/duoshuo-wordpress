@@ -86,14 +86,6 @@ function duoshuo_admin_initialize(){
 	
 	add_filter('post_row_actions', array($duoshuoPlugin, 'actionsFilter'));
 	
-	//// backwards compatible (before WP 3.0)
-	if (version_compare( $wp_version, '3.0', '<' ) && current_user_can('administrator')){
-		function duoshuo_wp_version_notice(){
-			echo '<div class="updated"><p>您的WordPress版本低于3.0，如果您能升级WordPress，多说就能更好地为您服务。</p></div>';
-		}
-		add_action('admin_notices', 'duoshuo_wp_version_notice');
-	}
-	
 	if (function_exists('get_post_types')){//	support from WP 2.9
 		$post_types = get_post_types( array('public' => true, 'show_in_nav_menus' => true), 'objects');
 		
@@ -116,7 +108,17 @@ function duoshuo_admin_initialize(){
 	
 	add_action('wp_dashboard_setup', 'duoshuo_add_dashboard_widget');
 	
-	if (!is_numeric($duoshuoPlugin->getOption('synchronized'))){
+	//// backwards compatible (before WP 3.0)
+	if (version_compare( $wp_version, '3.0', '<' ) && current_user_can('administrator')){
+		function duoshuo_wp_version_notice(){
+			echo '<div class="updated"><p>您的WordPress版本低于3.0，如果您能升级WordPress，多说就能更好地为您服务。</p></div>';
+		}
+		add_action(get_plugin_page_hook('duoshuo', 'duoshuo'), 'duoshuo_wp_version_notice');
+		add_action(get_plugin_page_hook('duoshuo-preferences', 'duoshuo'), 'duoshuo_wp_version_notice');
+		add_action(get_plugin_page_hook('duoshuo-settings', 'duoshuo'), 'duoshuo_wp_version_notice');
+	}
+	
+	if (!is_numeric($duoshuoPlugin->getOption('synchronized')) && current_user_can('administrator')){
 		function duoshuo_unsynchronized_notice(){
 			echo '<div class="updated"><p>上一次同步没有完成，<a href="' . admin_url('admin.php?page=duoshuo-settings') . '">点此继续同步</a></p></div>';
 		}
@@ -126,10 +128,7 @@ function duoshuo_admin_initialize(){
 		add_action(get_plugin_page_hook('duoshuo-settings', 'duoshuo'), 'duoshuo_unsynchronized_notice');
 	}
 	
-	function add_original_comments_notice(){
-		add_action('admin_notices', array($duoshuoPlugin, 'originalCommentsNotice'));
-	}
-	add_action('load-edit-comments.php', 'add_original_comments_notice');
+	add_action('admin_head-edit-comments.php', array($duoshuoPlugin, 'originalCommentsNotice'));
 	
 	if (defined('DOING_AJAX')){
 		add_action('wp_ajax_duoshuo_export', array($duoshuoPlugin, 'export'));
@@ -191,7 +190,7 @@ function duoshuo_register_widgets(){
 	//register_widget('Duoshuo_Widget_Top_Commenters');
 	
 	register_widget('Duoshuo_Widget_Recent_Comments');
-	//register_widget('Duoshuo_Widget_Top_Comments');
+	register_widget('Duoshuo_Widget_Top_Threads');
 	
 	register_widget('Duoshuo_Widget_Qqt_Follow');
 }

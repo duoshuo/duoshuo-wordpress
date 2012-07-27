@@ -281,8 +281,20 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		//delete_option('duoshuo_short_name');
 		delete_option('duoshuo_secret');
 		delete_option('duoshuo_synchronized');
+		delete_option('duoshuo_connect_failed');
+		delete_option('duoshuo_notice');
 		
-		if (function_exists('delete_metadata')){	//	TODO 需要测试
+		delete_option('duoshuo_cron_sync_enabled');
+		delete_option('duoshuo_seo_enabled');
+		delete_option('duoshuo_cc_fix');
+		delete_option('duoshuo_social_login_enabled');
+		delete_option('duoshuo_comments_wrapper_intro');
+		delete_option('duoshuo_comments_wrapper_outro');
+		
+		delete_option('_duoshuo_sync_lock');
+		
+		// WP 2.9 以后支持这个函数
+		if (function_exists('delete_metadata')){
 			delete_metadata('user', 0, 'duoshuo_access_token', '', true);
 			delete_metadata('user', 0, 'duoshuo_user_id', '', true);
 			delete_metadata('post', 0, 'duoshuo_thread_id', '', true);
