@@ -291,7 +291,8 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		delete_option('duoshuo_comments_wrapper_intro');
 		delete_option('duoshuo_comments_wrapper_outro');
 		
-		delete_option('_duoshuo_sync_lock');
+		delete_option('duoshuo_sync_lock');
+		delete_option('last_sync_id');
 		
 		// WP 2.9 以后支持这个函数
 		if (function_exists('delete_metadata')){

@@ -6,6 +6,7 @@
  *
  */
 class Duoshuo_Client{
+	
 	var $end_point = 'http://api.duoshuo.com/';
 	var $format = 'json';
 	var $userAgent;
@@ -22,7 +23,7 @@ class Duoshuo_Client{
 		$this->remoteAuth = $remoteAuth;
 		$this->accessToken = $accessToken;
 		$this->http = new WP_Http();
-		$this->userAgent = 'WordPress/' . $wp_version . '|Duoshuo/'. self::VERSION;
+		$this->userAgent = 'WordPress/' . $wp_version . '|Duoshuo/'. Duoshuo_WordPress::VERSION;
 	}
 	
 	/**

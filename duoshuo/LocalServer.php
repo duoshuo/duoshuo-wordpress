@@ -49,7 +49,7 @@ class Duoshuo_LocalServer{
 	 */
 	public function sync_log($input = array()){
 		$syncLock = $this->plugin->getOption('sync_lock');//检查是否正在同步评论 同步完成后该值会置0
-		if(!isset($syncLock) || $syncLock > time()- 900){//正在或15分钟内发生过写回但没置0
+		if(!$syncLock || $syncLock > time()- 900){//正在或15分钟内发生过写回但没置0
 			$this->response = array(
 					'code'	=>	Duoshuo_Exception::SUCCESS,
 					'response'=> '同步中，请稍候',

@@ -38,12 +38,13 @@ class Duoshuo_Abstract {
 	public function syncLog(){
 		$this->updateOption('sync_lock',  time());
 		
-		$last_sync = $this->getOption('last_sync');
+		$last_log_id = $this->getOption('last_log_id');
+		if (!$last_log_id)
+			$last_log_id = 0;
 			
 		$limit = 50;
 			
 		$params = array(
-				'since' => $last_sync,
 				'limit' => $limit,
 				'order' => 'asc',
 		);
@@ -52,14 +53,15 @@ class Duoshuo_Abstract {
 			
 		$posts = array();
 		$affectedThreads = array();
-		$max_sync_date = 0;
-			
+		
 		do{
 			try{
+				$params['since_id'] = $last_log_id;
 				$response = $client->getLogList($params);
 			}
 			catch(Duoshuo_Exception $e){
-				update_option('duoshuo_connect_failed', time());
+				$this->updateOption('connect_failed', time());
+				$this->updateOption('sync_lock',  0);
 				return;
 			}
 			
@@ -90,17 +92,14 @@ class Duoshuo_Abstract {
 					
 				$affectedThreads = array_merge($affectedThreads, $affected);
 		
-				if ($log['date'] > $max_sync_date)
-					$max_sync_date = $log['date'];
+				if ($log['log_id'] > $last_log_id)
+					$last_log_id = $log['log_id'];
 			}
-		
-			$params['since'] = $max_sync_date;
-		
+			
+			$this->updateOption('last_sync_id', $last_log_id);
+			
 		} while ($count == $limit);//如果返回和最大请求条数一致，则再取一次
 			
-		if ($max_sync_date > $last_sync)
-			$this->updateOption('last_sync', $max_sync_date);
-		
 		$this->updateOption('sync_lock',  0);
 		
 		//唯一化
