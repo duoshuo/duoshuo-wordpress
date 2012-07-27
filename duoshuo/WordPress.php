@@ -90,6 +90,13 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			: $wpdb->prefix;
 	}
 	
+	public function connected(){
+		$connected_failed = get_option('duoshuo_connect_failed');
+		return $connected_failed
+			? (time() - $connected_failed > 1800)
+			: true;
+	}
+	
 	public function userLogin($token){
 		global $wpdb, $error;
 		
@@ -174,7 +181,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		$url = 'http://' . $this->shortName . '.duoshuo.com/' . $action . '/?' . http_build_query($params, null, '&');
 		$args = array(
 			'method' => 'GET',
-			'timeout' => 15,
+			'timeout' => 10,
 			'redirection' => 5,
 			'httpversion' => '1.0',
 			//'user-agent' => $this->userAgent,
@@ -182,9 +189,10 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		
 		$http = new WP_Http();
 		$response = $http->request($url, $args);
-		if (isset($response->errors))
+		if (isset($response->errors)){
+			update_option('duoshuo_connect_failed', time());
             throw new Duoshuo_Exception('连接服务器失败,详细信息：' . json_encode($response->errors), Duoshuo_Exception::REQUEST_TIMED_OUT);
-        
+		}
 		return $response['body'];
 	}
 	
@@ -200,19 +208,6 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	}
 	
 	public function preferences(){
-		if ($_SERVER['REQUEST_METHOD'] == 'POST')
-			try{
-				$user = wp_get_current_user();
-				$params = $_POST;
-				
-				$response = $this->getClient($user->ID)->request('POST', 'sites/settings', $params);
-				
-				if ($response['code'] != 0)
-					echo '<div id="message" class="updated fade"><p><strong>' . $response['errorMessage'] . '</strong></p></div>';
-			}
-			catch(Duoshuo_Exception $e){
-				$this->showException($e);
-			}
 		include_once dirname(__FILE__) . '/preferences.php';
 	}
 	
@@ -256,6 +251,28 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function profile(){
 		if (!$this->checkAccessToken())
 			return ;
+		
+		$user = wp_get_current_user();
+		if ( $_SERVER['REQUEST_METHOD'] == 'POST'){
+			$params = array(
+					'name'			=> stripslashes($_POST['name']),
+					'email'			=> stripslashes($_POST['email']),
+					'url'			=> stripslashes($_POST['url']),
+			) + $_POST;
+			
+			try{
+				$response = $this->getClient($user->ID)->request('POST', 'users/update', $params);
+			
+				if ($response['code'] == 0):?>
+				<div id="message" class="updated fade"><p><strong><?php _e('Options saved.') ?></strong></p></div>
+				<?php else:?>
+				<div id="message" class="updated fade"><p><strong><?php echo $response['errorMessage'];?></strong></p></div>
+				<?php endif;
+			}
+			catch(Duoshuo_Exception $e){
+				echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
+			}
+		}
 		
 		include_once dirname(__FILE__) . '/profile.php';
 	}
@@ -308,7 +325,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		    	$this->syncPostComments($post);
 		    }
 		    catch(Duoshuo_Exception $e){
-				$this->showException($e);
+		    	update_option('duoshuo_connect_failed', time());
 			}
 	    }
 	    
@@ -325,7 +342,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    	return "<$matches[1] $attribs$matches[2]>$matches[3]</$matches[4]>";
 	    }
 	    else
-		    return "<span $attribs>$comment_text</span>";
+		    return "<span $attribs data-replace=\"1\">$comment_text</span>";
 	}
 	
 	public function userData($userId = null){	// null 代表当前登录用户，0代表游客
@@ -600,7 +617,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 				echo '<div id="message" class="updated fade"><p><strong>' . $response['errorMessage'] . '</strong></p></div>';
 		}
 		catch(Duoshuo_Exception $e){
-			$this->showException($e);
+			update_option('duoshuo_connect_failed', time());
 		}
 	}
 	
@@ -629,7 +646,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			//	$this->updateUserMeta($data['source_user_id'], 'duoshuo_user_id', $remoteResponse['response']['user_id']);
 		}
 		catch(Duoshuo_Exception $e){
-			$this->showException($e);
+			update_option('duoshuo_connect_failed', time());
 		}
 	}
 	
@@ -661,7 +678,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			}
 		}
 		catch(Duoshuo_Exception $e){
-			$this->showException($e);
+			update_option('duoshuo_connect_failed', time());
 		}
 	}
 	
@@ -716,7 +733,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 				update_post_meta($post->ID, 'duoshuo_thread_id', $response['response']['thread_id']);
 		}
 		catch(Duoshuo_Exception $e){
-			$this->showException($e);
+			update_option('duoshuo_connect_failed', time());
 		}
 	}
 	
@@ -888,9 +905,11 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		
 		if (isset($post['post_key'])){
 			$data['comment_ID'] = $post['post_key'];
+			//	wp_update_comment 中会做 wp_filter_comment
 			wp_update_comment($data);
 		}
 		else{
+			$data = wp_filter_comment($data);
 			$data['comment_ID'] = wp_insert_comment($data);
 		}
 		
@@ -992,6 +1011,11 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function syncOptions(){
 		global $post;
 		
+		if (!$this->connected()){
+			echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
+			return;
+		}
+		
 		switch($post->post_status){
 			case 'auto-draft':
 			case 'inherit':
@@ -1013,22 +1037,23 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		
 		try{
 			echo $this->getHtml('partials/sync-options', $params);
+			echo '<p><a href="' . admin_url('admin.php?page=duoshuo-profile') . '">绑定更多社交网站</a></p>';
 		}
 		catch(Duoshuo_Exception $e){
-			$this->showException($e);
+			echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
 		}
-		echo '<p><a href="' . admin_url('admin.php?page=duoshuo-profile') . '">绑定更多社交网站</a></p>';
 	}
 	
 	public function managePostComments($post){
 		//这里应该嵌入一个iframe框
 	}
 	
-	public function syncCron(){
+	public function syncLogCron(){
 		try{
-			$this->syncCommentsToLocal();
+			$this->syncLog();
 		}
 		catch(Duoshuo_Exception $e){
+			update_option('duoshuo_connect_failed', time());
 		}
 	}
 	

@@ -10,27 +10,27 @@
 		<tbody>
 		<tr valign="top">
 			<th scope="row">本地数据备份</th>
-			<td><input type="checkbox" name="duoshuo_cron_sync_enabled" value="1" <?php if (get_option('duoshuo_cron_sync_enabled')) echo ' checked="checked"';?>/>定时从多说备份评论到本地</td>
+			<td><label><input type="checkbox" name="duoshuo_cron_sync_enabled" value="1" <?php if (get_option('duoshuo_cron_sync_enabled')) echo ' checked="checked"';?>/>定时从多说备份评论到本地</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">SEO优化</th>
-			<td><input type="checkbox" name="duoshuo_seo_enabled" value="1" <?php if (get_option('duoshuo_seo_enabled')) echo ' checked="checked"';?>/>搜索引擎爬虫访问网页时，显示静态HTML评论</td>
+			<td><label><input type="checkbox" name="duoshuo_seo_enabled" value="1" <?php if (get_option('duoshuo_seo_enabled')) echo ' checked="checked"';?>/>搜索引擎爬虫访问网页时，显示静态HTML评论</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">评论数修正</th>
-			<td><input type="checkbox" name="duoshuo_cc_fix" value="1" <?php if (get_option('duoshuo_cc_fix')) echo ' checked="checked"';?> />AJAX加载文章的评论数</td>
+			<td><label><input type="checkbox" name="duoshuo_cc_fix" value="1" <?php if (get_option('duoshuo_cc_fix')) echo ' checked="checked"';?> />AJAX加载文章的评论数</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">社交帐号登录</th>
-			<td><input type="checkbox" name="duoshuo_social_login_enabled" value="1" <?php if (get_option('duoshuo_social_login_enabled')) echo ' checked="checked"';?>/>允许用社交帐号登录WordPress</td>
+			<td><label><input type="checkbox" name="duoshuo_social_login_enabled" value="1" <?php if (get_option('duoshuo_social_login_enabled')) echo ' checked="checked"';?>/>允许用社交帐号登录WordPress</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">评论框前缀</th>
-			<td><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_intro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_intro'));?>" /><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
+			<td><label><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_intro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_intro'));?>" /></label><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">评论框后缀</th>
-			<td><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_outro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_outro'));?>" /><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
+			<td><label><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_outro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_outro'));?>" /></label><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
 		</tr>
 		</tbody>
 	</table>

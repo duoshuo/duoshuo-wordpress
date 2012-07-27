@@ -9,7 +9,7 @@ $adminUrl = 'http://' . $this->shortName . '.' . self::DOMAIN.'/admin/?'.http_bu
 <div class="wrap">
 <?php screen_icon(); ?>
 <h2>多说评论管理
-<a style="font-size:13px" target="_blank" href="<?php echo $adminUrl;?>">在新窗口中打开</a>
+<a class="add-new-h2" target="_blank" href="<?php echo $adminUrl;?>">在新窗口中打开</a>
 </h2>
 <iframe id="duoshuo-remote-window" src="<?php echo $adminUrl;?>" style="width:100%;"></iframe>
 </div>

@@ -120,13 +120,16 @@ function duoshuo_admin_initialize(){
 		function duoshuo_unsynchronized_notice(){
 			echo '<div class="updated"><p>上一次同步没有完成，<a href="' . admin_url('admin.php?page=duoshuo-settings') . '">点此继续同步</a></p></div>';
 		}
-		add_action('admin_notices', 'duoshuo_unsynchronized_notice');
-	}
 		
-	function addOriginalCommentsNotice(){
+		add_action(get_plugin_page_hook('duoshuo', 'duoshuo'), 'duoshuo_unsynchronized_notice');
+		add_action(get_plugin_page_hook('duoshuo-preferences', 'duoshuo'), 'duoshuo_unsynchronized_notice');
+		add_action(get_plugin_page_hook('duoshuo-settings', 'duoshuo'), 'duoshuo_unsynchronized_notice');
+	}
+	
+	function add_original_comments_notice(){
 		add_action('admin_notices', array($duoshuoPlugin, 'originalCommentsNotice'));
 	}
-	add_action('load-edit-comments.php', array($duoshuoPlugin,'addOriginalCommentsNotice'));
+	add_action('load-edit-comments.php', 'add_original_comments_notice');
 	
 	if (defined('DOING_AJAX')){
 		add_action('wp_ajax_duoshuo_export', array($duoshuoPlugin, 'export'));
@@ -173,9 +176,9 @@ function duoshuo_common_initialize(){
 	add_filter('comments_open', array($duoshuoPlugin, 'commentsOpen'));
 	
 	if ($duoshuoPlugin->getOption('cron_sync_enabled')){
-		add_action('duoshuo_sync_cron', array($duoshuoPlugin, 'syncCron'));
-		if (!wp_next_scheduled('duoshuo_sync_cron')){
-			wp_schedule_event(time(), 'hourly', 'duoshuo_sync_cron');
+		add_action('duoshuo_sync_log_cron', array($duoshuoPlugin, 'syncLogCron'));
+		if (!wp_next_scheduled('duoshuo_sync_log_cron')){
+			wp_schedule_event(time(), 'hourly', 'duoshuo_sync_log_cron');
 		}
 	}
 }

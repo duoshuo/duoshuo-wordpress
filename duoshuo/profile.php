@@ -1,28 +1,4 @@
 <link rel="stylesheet" href="<?php echo $this->pluginDirUrl; ?>styles.css" type="text/css" />
-<?php
-$user = wp_get_current_user();
-if ( $_SERVER['REQUEST_METHOD'] == 'POST'):
-
-$params = array(
-	'name'			=> stripslashes($_POST['name']),
-	'email'			=> stripslashes($_POST['email']),
-	'url'			=> stripslashes($_POST['url']),
-) + $_POST;
-
-try{
-	$response = $this->getClient($user->ID)->request('POST', 'users/update', $params);
-	
-	if ($response['code'] == 0):?>
-	<div id="message" class="updated fade"><p><strong><?php _e('Options saved.') ?></strong></p></div>
-	<?php else:?>
-	<div id="message" class="updated fade"><p><strong><?php echo $response['errorMessage'];?></strong></p></div>
-	<?php endif;
-}
-catch(Duoshuo_Exception $e){
-	$this->showException($e);
-}
-
-endif;?>
 
 <div class="wrap">
 <?php screen_icon(); ?>
@@ -35,7 +11,7 @@ try{
 	echo $this->getHtml('social-accounts', $params);
 }
 catch(Duoshuo_Exception $e){
-	$this->showException($e);
+	echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
 }
 
 try{ ?>
@@ -54,7 +30,7 @@ echo $this->getHtml('edit-profile', $params);
 <?php 
 }	// end of try
 catch(Duoshuo_Exception $e){
-	$this->showException($e);
+	echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
 }
 ?>
 </div>

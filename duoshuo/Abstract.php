@@ -35,6 +35,78 @@ class Duoshuo_Abstract {
 		$this->userLogin($token);
 	}
 	
+	public function syncLog(){
+		$this->updateOption('sync_lock',  time());
+		
+		$last_sync = $this->getOption('last_sync');
+			
+		$limit = 50;
+			
+		$params = array(
+				'since' => $last_sync,
+				'limit' => $limit,
+				'order' => 'asc',
+		);
+			
+		$client = $this->getClient();
+			
+		$posts = array();
+		$affectedThreads = array();
+		$max_sync_date = 0;
+			
+		do{
+			try{
+				$response = $client->getLogList($params);
+			}
+			catch(Duoshuo_Exception $e){
+				update_option('duoshuo_connect_failed', time());
+				return;
+			}
+			
+			$count = count($response['response']);
+		
+			foreach($response['response'] as $log){
+				switch($log['action']){
+					case 'create':
+						$affected = $this->createPost($log['meta']);
+						break;
+					case 'approve':
+						$affected = $this->approvePost($log['meta']);
+						break;
+					case 'spam':
+						$affected = $this->spamPost($log['meta']);
+						break;
+					case 'delete':
+						$affected = $this->deletePost($log['meta']);
+						break;
+					case 'delete-forever':
+						$affected = $this->deleteForeverPost($log['meta']);
+						break;
+					case 'update'://现在并没有update操作的逻辑
+					default:
+						$affected = array();
+				}
+				//合并
+					
+				$affectedThreads = array_merge($affectedThreads, $affected);
+		
+				if ($log['date'] > $max_sync_date)
+					$max_sync_date = $log['date'];
+			}
+		
+			$params['since'] = $max_sync_date;
+		
+		} while ($count == $limit);//如果返回和最大请求条数一致，则再取一次
+			
+		if ($max_sync_date > $last_sync)
+			$this->updateOption('last_sync', $max_sync_date);
+		
+		$this->updateOption('sync_lock',  0);
+		
+		//唯一化
+		return array_unique($affectedThreads);
+	}
+	
 	public function remoteAuth($user_data){
 		$message = base64_encode(json_encode($user_data));
 	    $time = time();
