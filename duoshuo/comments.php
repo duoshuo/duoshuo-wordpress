@@ -7,6 +7,8 @@ if (!did_action('wp_head')){
 	$duoshuoPlugin->printScripts();
 }
 
+$topPost = $duoshuoPlugin->topPost($post);
+
 if ($intro = get_option('duoshuo_comments_wrapper_intro'))
 	echo $intro;
 ?>
@@ -14,17 +16,17 @@ if ($intro = get_option('duoshuo_comments_wrapper_intro'))
 
 <?php
 if (current_user_can('moderate_comments')):
-	$threadId = get_post_meta($post->ID, 'duoshuo_thread_id', true);
+	$threadId = get_post_meta($topPost->ID, 'duoshuo_thread_id', true);
 	if (empty($threadId)):?>
 		<p>这篇文章的评论尚未同步到多说，<a href="<?php echo admin_url('admin.php?page=duoshuo-settings');?>">点此同步</a></p>
 	<?php endif;
 endif;
  
 $data = array(
-	'thread-key'=>	$post->ID,
-	'author-key'=>	$post->post_author,
-	'title'		=>	$post->post_title,
-	'url'		=>	get_permalink(),
+	'thread-key'=>	$topPost->ID,
+	'author-key'=>	$topPost->post_author,
+	'title'		=>	$topPost->post_title,
+	'url'		=>	get_permalink($topPost->ID),
 	//'order'		=>	'desc',
 	//'limit'		=>	20,
 );

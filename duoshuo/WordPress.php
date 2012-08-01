@@ -83,6 +83,18 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			: get_usermeta($userId, $metaKey);
 	}
 	
+	public function threadKey($post){
+		return $post->post_status == 'inherit'
+			? ($post->post_parent ? $post->post_parent : null)
+			: $post->ID;
+	}
+	
+	public function topPost($post){
+		return $post->post_status == 'inherit'
+			? ($post->post_parent ? get_post($post->post_parent) : null)
+			: $post;
+	}
+	
 	public function get_blog_prefix(){
 		global $wpdb;
 		return method_exists($wpdb,'get_blog_prefix')
@@ -214,7 +226,11 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function settings(){
 		include_once dirname(__FILE__) . '/settings.php';
 	}
-	
+
+	public function profile(){
+		include_once dirname(__FILE__) . '/profile.php';
+	}
+	/*
 	public function checkAccessToken(){
 		$user = wp_get_current_user();
 		
@@ -247,36 +263,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			return true;
 		}
 	}
-	
-	public function profile(){
-		if (!$this->checkAccessToken())
-			return ;
-		
-		$user = wp_get_current_user();
-		if ( $_SERVER['REQUEST_METHOD'] == 'POST'){
-			$params = array(
-					'name'			=> stripslashes($_POST['name']),
-					'email'			=> stripslashes($_POST['email']),
-					'url'			=> stripslashes($_POST['url']),
-			) + $_POST;
-			
-			try{
-				$response = $this->getClient($user->ID)->request('POST', 'users/update', $params);
-			
-				if ($response['code'] == 0):?>
-				<div id="message" class="updated fade"><p><strong><?php _e('Options saved.') ?></strong></p></div>
-				<?php else:?>
-				<div id="message" class="updated fade"><p><strong><?php echo $response['errorMessage'];?></strong></p></div>
-				<?php endif;
-			}
-			catch(Duoshuo_Exception $e){
-				echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
-			}
-		}
-		
-		include_once dirname(__FILE__) . '/profile.php';
-	}
-	
+	*/
 	public function uninstall(){
 		//delete_option('duoshuo_short_name');
 		delete_option('duoshuo_secret');
@@ -318,10 +305,14 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	}
 	
 	public function commentsTemplate($value){
-	    global $post;
-	    global $comments;
+	    global $post, $comments;
 		
-	    if ( !( is_singular() && ( have_comments() || 'open' == $post->comment_status ) ) ) {
+	    $topPost = $this->topPost($post);
+	    
+	    if ($topPost === null)	//	 可能是inherit 但post_parent=0
+	    	return;
+	    
+	    if ( !( is_singular() && ( have_comments() || 'open' == $topPost->comment_status ) ) ) {
 	        return;
 	    }
 		/*
@@ -329,13 +320,13 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	        return $value;
 	    }*/
 	    
-	    $threadId = get_post_meta($post->ID, 'duoshuo_thread_id', true);
+	    $threadId = get_post_meta($topPost->ID, 'duoshuo_thread_id', true);
 	    
 	    if (empty($threadId)){
-	    	$this->syncUserToRemote($post->post_author);
-	    	$this->syncPostToRemote($post->ID, $post);
+	    	$this->syncUserToRemote($topPost->post_author);
+	    	$this->syncPostToRemote($topPost->ID, $topPost);
 		    try{
-		    	$this->syncPostComments($post);
+		    	$this->syncPostComments($topPost);
 		    }
 		    catch(Duoshuo_Exception $e){
 		    	update_option('duoshuo_connect_failed', time());
@@ -349,11 +340,14 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
 	public function commentsText($comment_text, $number = null){
 	    global $post;
+	    $threadKey = $this->threadKey($post);
 	    
-	    $attribs = 'class="ds-thread-count" data-thread-key="' . $post->ID .'"';
-	    if (preg_match('/^<([a-z]+)( .*)?>(.*)<\/([a-z]+)>$/i', $comment_text, $matches) && $matches[1] == $matches[4]){
+	    if ($threadKey === null)	//	post_status = inherit, post_parent = 0
+	    	return $comment_text;
+	    
+	    $attribs = 'class="ds-thread-count" data-thread-key="' . $threadKey .'"';
+	    if (preg_match('/^<([a-z]+)( .*)?>(.*)<\/([a-z]+)>$/i', $comment_text, $matches) && $matches[1] == $matches[4])
 	    	return "<$matches[1] $attribs$matches[2]>$matches[3]</$matches[4]>";
-	    }
 	    else
 		    return "<span $attribs data-replace=\"1\">$comment_text</span>";
 	}
@@ -461,9 +455,6 @@ if (window.duoshuoQuery && duoshuoQuery.sso)
 		update_option('duoshuo_secret', $_GET['secret']);
 		$this->shortName = $_GET['short_name'];
 		$this->secret = $_GET['secret'];
-		
-		//需要将当前注册的用户多说帐号和wp帐号关联起来，否则马上导入的时候会出现重复帐号。
-		$this->checkAccessToken();
 		
 		$user = wp_get_current_user();
 		$this->joinSite($user);?>
@@ -699,7 +690,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		global $wpdb;
 		
 		$columns = array('ID', 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_title', 'post_excerpt', 'post_status', 'comment_status', 'ping_status', 'post_name', 'post_modified_gmt', 'guid', 'post_type', 'post_parent');
-		$posts = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->posts where post_type not in ('nav_menu_item', 'revision') and post_status not in ('auto-draft', 'draft', 'trash') order by ID asc limit $offset,$limit") );// 'inherit' 也进行同步
+		$posts = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->posts where post_type not in ('attachment', 'nav_menu_item', 'revision') and post_status not in ('auto-draft', 'draft', 'trash', 'inherit') order by ID asc limit $offset,$limit") );// 'inherit' 不再进行同步
 		
 		if (count($posts) === 0)
 			return 0;
@@ -727,8 +718,8 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		if ($post == null)
 			$post = get_post($postId);
 		
-		if (in_array($post->post_type, array('nav_menu_item', 'revision'))
-			|| in_array($post->post_status, array('auto-draft', 'draft', 'trash')))	//'inherit' 也可以进行同步
+		if (in_array($post->post_type, array('nav_menu_item', 'revision', 'attachment'))
+			|| in_array($post->post_status, array('inherit', 'auto-draft', 'draft', 'trash')))	//'inherit' 不再进行同步
 			return ;
 		
 		$params = $this->packagePost($post);
