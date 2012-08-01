@@ -49,23 +49,19 @@ class Duoshuo_LocalServer{
 	 */
 	public function sync_log($input = array()){
 		$syncLock = $this->plugin->getOption('sync_lock');//检查是否正在同步评论 同步完成后该值会置0
-		if(!$syncLock || $syncLock > time()- 900){//正在或15分钟内发生过写回但没置0
+		if($syncLock && $syncLock > time()- 300){//正在或5分钟内发生过写回但没置0
 			$this->response = array(
-					'code'	=>	Duoshuo_Exception::SUCCESS,
-					'response'=> '同步中，请稍候',
+				'code'	=>	Duoshuo_Exception::SUCCESS,
+				'response'=> '同步中，请稍候',
 			);
 			return;
 		}
 		
 		try{
-			$aidList = $this->plugin->syncLog();
-			
-			//更新静态文件
-			if ($this->plugin->getOption('sync_to_local') && $this->plugin->getOption('seo_enabled'))
-				$this->plugin->refreshThreads($aidList);
+			$this->response['last_log_id'] = $this->plugin->syncLog();
 		}
 		catch(Exception $ex){
-			$this->plugin->updateOption('sync_lock', $ex->getLine());
+			//$this->plugin->updateOption('sync_lock', $ex->getLine());
 		}
 		
 		$this->response['code'] = Duoshuo_Exception::SUCCESS;
@@ -80,6 +76,29 @@ class Duoshuo_LocalServer{
 				update_option($_POST['option'], $_POST['value']);
 			}
 		$this->response['code'] = 0;
+	}
+	
+	public function dispatch($input){
+		if (!isset($input['signature']))
+			throw new Duoshuo_Exception('Invalid signature.', Duoshuo_Exception::INVALID_SIGNATURE);
+	
+		$signature = $input['signature'];
+		unset($input['signature']);
+	
+		ksort($input);
+		$baseString = http_build_query($input, null, '&');
+	
+		$expectSignature = base64_encode(hash_hmac('sha1', $baseString, $this->plugin->getOption('secret'), true));
+		if ($signature !== $expectSignature)
+			throw new Duoshuo_Exception('Invalid signature, expect: ' . $expectSignature . '. (' . $baseString . ')', Duoshuo_Exception::INVALID_SIGNATURE);
+	
+		$method = $input['action'];
+	
+		if (!method_exists($this, $method))
+			throw new Duoshuo_Exception('Unknown action.', Duoshuo_Exception::OPERATION_NOT_SUPPORTED);
+	
+		$this->$method($input);
+		$this->sendResponse();
 	}
 	
 	public function sendResponse(){

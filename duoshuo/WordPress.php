@@ -279,7 +279,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		delete_option('duoshuo_comments_wrapper_outro');
 		
 		delete_option('duoshuo_sync_lock');
-		delete_option('last_sync_id');
+		delete_option('duoshuo_last_log_id');
 		
 		// WP 2.9 以后支持这个函数
 		if (function_exists('delete_metadata')){
@@ -322,7 +322,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    
 	    $threadId = get_post_meta($topPost->ID, 'duoshuo_thread_id', true);
 	    
-	    if (empty($threadId)){
+	    if (empty($threadId) && $this->connected()){
 	    	$this->syncUserToRemote($topPost->post_author);
 	    	$this->syncPostToRemote($topPost->ID, $topPost);
 		    try{
@@ -611,6 +611,9 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	 * 通知多说服务器更新站点信息
 	 */
 	public function updateSite(){
+		if (!$this->connected())
+			return;
+		
 		$params = $this->packageOptions();
 		$user = wp_get_current_user();
 		
@@ -656,6 +659,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	
 	public function syncUserToRemote($userId){
 		global $wpdb;
+		
+		if (!$this->connected())
+			return ;
+		
 		$user = get_userdata($userId);
 		
 		if ($user instanceof WP_User){	//	wordpress 3.3
@@ -720,6 +727,9 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		
 		if (in_array($post->post_type, array('nav_menu_item', 'revision', 'attachment'))
 			|| in_array($post->post_status, array('inherit', 'auto-draft', 'draft', 'trash')))	//'inherit' 不再进行同步
+			return ;
+		
+		if (!$this->connected())
 			return ;
 		
 		$params = $this->packagePost($post);

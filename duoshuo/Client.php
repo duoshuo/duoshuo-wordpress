@@ -36,6 +36,7 @@ class Duoshuo_Client{
 	 */
 	function request($method, $path, $params = array()){
         $params['short_name'] = $this->shortName;
+        $params['secret'] = $this->secret;
 		$params['remote_auth'] = $this->remoteAuth;
         
         if ($this->accessToken)

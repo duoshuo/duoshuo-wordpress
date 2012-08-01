@@ -41,8 +41,8 @@ class Duoshuo_Abstract {
 		$last_log_id = $this->getOption('last_log_id');
 		if (!$last_log_id)
 			$last_log_id = 0;
-			
-		$limit = 50;
+		
+		$limit = 20;
 			
 		$params = array(
 				'limit' => $limit,
@@ -50,14 +50,14 @@ class Duoshuo_Abstract {
 		);
 			
 		$client = $this->getClient();
-			
+		
 		$posts = array();
 		$affectedThreads = array();
 		
-		do{
+		//do{
 			try{
 				$params['since_id'] = $last_log_id;
-				$response = $client->getLogList($params);
+				$response = $client->request('GET', 'log/list', $params);
 			}
 			catch(Duoshuo_Exception $e){
 				$this->updateOption('connect_failed', time());
@@ -65,8 +65,6 @@ class Duoshuo_Abstract {
 				return;
 			}
 			
-			$count = count($response['response']);
-		
 			foreach($response['response'] as $log){
 				switch($log['action']){
 					case 'create':
@@ -88,22 +86,25 @@ class Duoshuo_Abstract {
 					default:
 						$affected = array();
 				}
+				
 				//合并
-					
 				$affectedThreads = array_merge($affectedThreads, $affected);
 		
 				if ($log['log_id'] > $last_log_id)
 					$last_log_id = $log['log_id'];
 			}
 			
-			$this->updateOption('last_sync_id', $last_log_id);
-			
-		} while ($count == $limit);//如果返回和最大请求条数一致，则再取一次
+			$this->updateOption('last_log_id', $last_log_id);
+		
+		//} while (count($response['response']) == $limit);//如果返回和最大请求条数一致，则再取一次
 			
 		$this->updateOption('sync_lock',  0);
 		
-		//唯一化
-		return array_unique($affectedThreads);
+		//更新静态文件
+		if ($this->getOption('sync_to_local') && $this->plugin->getOption('seo_enabled'))
+			$this->refreshThreads(array_unique($affectedThreads));
+		
+		return $last_log_id;
 	}
 	
 	public function remoteAuth($user_data){
