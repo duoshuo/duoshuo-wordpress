@@ -10,6 +10,23 @@
 }
 </style>
 <script type="text/javascript">
+function fireSyncLog(progress){
+	var $ = jQuery;
+	$.ajax({
+        url:ajaxurl,
+        data:{action: 'duoshuo_sync_log'},
+        error:duoshuoOnError,
+        success:function(response) {
+        	if (response.code == 0){
+        		alert('同步了' + response.count + '条记录');
+        	}
+        	else{
+        		alert(response.errorMessage);
+        	}
+        },
+        dataType:'json'
+    });
+}
 function fireExport(){
 	var $ = jQuery;
 	$('#ds-export .status').empty();//.removeClass('ds-export-fail').html('处理中...');
@@ -18,32 +35,32 @@ function fireExport(){
     exportProgress();
     return false;
 }
-
+function duoshuoOnError(jqXHR, textStatus){
+    switch(textStatus){
+    case 'parsererror':
+    	alert('解析错误，联系多说客服帮助解决问题：' + jqXHR.responseText);
+    	break;
+    case "abort":
+    	break;
+    case "notmodified":
+    case "error":
+    case "timeout":
+    default:
+    	var dict = {
+    		notmodified	: '没有变化',
+        	error		: '出错了',
+        	timeout		: '超时了'
+        };
+        alert(dict[textStatus] + ', 联系多说客服帮助解决问题');
+    }
+}
 function exportProgress(progress){
 	var $ = jQuery;
 	var rdigit = /\d/;
     $.ajax({
         url:ajaxurl,
         data:{action: 'duoshuo_export'},
-        error:function(jqXHR, textStatus){
-            switch(textStatus){
-            case 'parsererror':
-            	alert('解析错误，联系多说客服帮助解决问题：' + jqXHR.responseText);
-            	break;
-            case "abort":
-            	break;
-            case "notmodified":
-            case "error":
-            case "timeout":
-            default:
-            	var dict = {
-            		notmodified	: '没有变化',
-                	error		: '出错了',
-                	timeout		: '超时了'
-                };
-                alert(dict[textStatus] + ', 联系多说客服帮助解决问题');
-            }
-        },
+        error:duoshuoOnError,
         success:function(response) {
         	if (response.code == 0){
         		if (rdigit.test(response.progress) && !isNaN(response.progress)){

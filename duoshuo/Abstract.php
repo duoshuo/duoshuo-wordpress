@@ -88,7 +88,8 @@ class Duoshuo_Abstract {
 				}
 				
 				//合并
-				$affectedThreads = array_merge($affectedThreads, $affected);
+				if (is_array($affected))
+					$affectedThreads = array_merge($affectedThreads, $affected);
 		
 				if ($log['log_id'] > $last_log_id)
 					$last_log_id = $log['log_id'];
@@ -104,7 +105,7 @@ class Duoshuo_Abstract {
 		if ($this->getOption('sync_to_local') && $this->plugin->getOption('seo_enabled'))
 			$this->refreshThreads(array_unique($affectedThreads));
 		
-		return $last_log_id;
+		return count($response['response']);
 	}
 	
 	public function remoteAuth($user_data){

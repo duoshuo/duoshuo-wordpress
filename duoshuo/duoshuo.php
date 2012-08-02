@@ -132,6 +132,7 @@ function duoshuo_admin_initialize(){
 	
 	if (defined('DOING_AJAX')){
 		add_action('wp_ajax_duoshuo_export', array($duoshuoPlugin, 'export'));
+		add_action('wp_ajax_duoshuo_sync_log', array($duoshuoPlugin, 'syncLogAction'));
 	}
 	
 	duoshuo_common_initialize();
@@ -175,7 +176,7 @@ function duoshuo_common_initialize(){
 	add_filter('comments_open', array($duoshuoPlugin, 'commentsOpen'));
 	
 	if ($duoshuoPlugin->getOption('cron_sync_enabled')){
-		add_action('duoshuo_sync_log_cron', array($duoshuoPlugin, 'syncLogCron'));
+		add_action('duoshuo_sync_log_cron', array($duoshuoPlugin, 'syncLog'));
 		if (!wp_next_scheduled('duoshuo_sync_log_cron')){
 			wp_schedule_event(time(), 'hourly', 'duoshuo_sync_log_cron');
 		}

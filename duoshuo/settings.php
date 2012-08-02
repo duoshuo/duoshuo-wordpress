@@ -26,11 +26,15 @@
 		</tr>
 		<tr valign="top">
 			<th scope="row">评论框前缀</th>
-			<td><label><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_intro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_intro'));?>" /></label><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
+			<td><label><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_intro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_intro'));?>" /></label><br /><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">评论框后缀</th>
-			<td><label><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_outro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_outro'));?>" /></label><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
+			<td><label><input type="text" class="regular-text code" name="duoshuo_comments_wrapper_outro" value="<?php echo esc_attr(get_option('duoshuo_comments_wrapper_outro'));?>" /></label><br /><span class="description">仅在主题和评论框的div嵌套不正确的情况下使用</span></td>
+		</tr>
+		<tr valign="top">
+			<th scope="row">调试开关</th>
+			<td><label><input type="checkbox" name="duoshuo_debug" value="1" <?php if (get_option('duoshuo_debug')) echo ' checked="checked"';?>/>Debug调试开关</label><br /><span class="description">仅在出现故障向多说汇报错误信息时打开</span></td>
 		</tr>
 		</tbody>
 	</table>
@@ -44,7 +48,7 @@
 	<p class="message-complete">同步完成</p>
 </div>
 <div id="ds-sync">
-	<p class="message-start"><a href="javascript:void(0)" class="button" onclick="fireExport();return false;">同步多说中的评论到本地数据库</a></p>
+	<p class="message-start"><a href="javascript:void(0)" class="button" onclick="fireSyncLog();return false;">备份多说中的评论到本地数据库</a></p>
 </div>
 <?php include_once dirname(__FILE__) . '/common-script.html';?>
 
@@ -57,7 +61,7 @@
 </div>
 
 <h3>意见反馈</h3>
-<p>你的意见是多说成长的原动力，<a href="http://blog.duoshuo.com/feedback-wordpress-<?php echo str_replace('.','-', self::VERSION);?>/" target="_blank">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
+<p>你的意见是多说成长的原动力，<a href="http://dev.duoshuo.com/discussion">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
 
 <?php
 $services = array(

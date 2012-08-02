@@ -28,13 +28,14 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		$this->secret = $this->getOption('secret');
 		
 		$defaultOptions = array(
+			'duoshuo_debug'					=>	0,
 			'duoshuo_cron_sync_enabled'		=>	1,
 			'duoshuo_seo_enabled'			=>	1,
 			'duoshuo_cc_fix'				=>	1,
 			'duoshuo_social_login_enabled'	=>	1,
 			'duoshuo_comments_wrapper_intro'=>	'',
 			'duoshuo_comments_wrapper_outro'=>	'',
-			'duoshuo_last_post_id'			=>	0,
+			'duoshuo_last_log_id'			=>	0,
 		);
 		
 		foreach ($defaultOptions as $optionName => $value)
@@ -468,7 +469,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function export(){
 		@set_time_limit(0);
 		@ini_set('memory_limit', '256M');
-		@ini_set('display_errors', 1);
+		@ini_set('display_errors', $this->getOption('debug'));
 		
 		$progress = $this->getOption('synchronized');
 		
@@ -886,7 +887,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			: $wpdb->get_var("SELECT post_id FROM $wpdb->postmeta WHERE meta_key = 'duoshuo_thread_id' AND meta_value = $post[thread_id]");
 		
 		if (!is_numeric($post_id))	//	找不到对应的文章
-			return;
+			return array();
 		
 		$data = array(
 			'comment_author'	=>	trim(strip_tags($post['author_name'])),
@@ -1062,12 +1063,20 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		//这里应该嵌入一个iframe框
 	}
 	
-	public function syncLogCron(){
+	public function syncLogAction(){
+		@set_time_limit(0);
+		@ini_set('memory_limit', '256M');
+		@ini_set('display_errors', $this->getOption('debug'));
+		
 		try{
-			$this->syncLog();
+			$response = array(
+				'count'	=>	$this->syncLog(),
+				'code'	=>	0
+			);
+			$this->sendJsonResponse($response);
 		}
 		catch(Duoshuo_Exception $e){
-			update_option('duoshuo_connect_failed', time());
+			$this->sendException($e);
 		}
 	}
 	
@@ -1107,6 +1116,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	}
 	
 	public function updateLocalOptions(){
+		update_option('duoshuo_debug', isset($_POST['duoshuo_debug']) ? 1 : 0);
 		update_option('duoshuo_cron_sync_enabled', isset($_POST['duoshuo_cron_sync_enabled']) ? 1 : 0);
 		update_option('duoshuo_seo_enabled', isset($_POST['duoshuo_seo_enabled']) ? 1 : 0);
 		update_option('duoshuo_cc_fix', isset($_POST['duoshuo_cc_fix']) ? 1 : 0);

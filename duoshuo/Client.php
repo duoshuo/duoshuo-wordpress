@@ -82,11 +82,11 @@ class Duoshuo_Client{
 				if ($message == 'name lookup timed out')
 					$message = 'DNS解析超时，请重试或检查你的主机的域名解析(DNS)设置。';
 				elseif (stripos($message, 'Could not open handle for fopen') === 0)
-					$message = '无法打开fopen句柄，请重试或联系多说管理员。http://duoshuo.com/';
+					$message = '无法打开fopen句柄，请重试或联系多说管理员。http://dev.duoshuo.com/';
 				elseif (stripos($message, 'Couldn\'t resolve host') === 0)
 					$message = '无法解析duoshuo.com域名，请重试或检查你的主机的域名解析(DNS)设置。';
 				elseif (stripos($message, 'Operation timed out after ') === 0)
-					$message = '操作超时，请重试或联系多说管理员。http://duoshuo.com/';
+					$message = '操作超时，请重试或联系多说管理员。http://dev.duoshuo.com/';
 				throw new Duoshuo_Exception($message, Duoshuo_Exception::REQUEST_TIMED_OUT);
 			}
             else

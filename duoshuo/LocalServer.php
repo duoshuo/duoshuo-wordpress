@@ -10,38 +10,6 @@ class Duoshuo_LocalServer{
 		$this->plugin = $plugin;
 	}
 	
-	static function syncCommentsToLocal(){
-		update_option('_duoshuo_sync_lock', time());
-		
-		$last_post_id = $this->getOption('last_post_id');
-		
-		$params = array(
-			'start_id' => $last_post_id,
-            'limit' => 20,
-            'order' => 'asc',
-			'sources'=>'duoshuo,anonymous'
-		);
-		
-		$client = $this->getClient();
-		
-		$response = $client->request('GET', 'sites/listPosts', $params);
-		
-		$imported = self::_syncCommentsToLocal($response['response']);
-		$client->request('POST', 'posts/imported', $imported);
-	
-		$max_post_id = 0;
-		foreach($response['response'] as $post)
-			if ($post['post_id'] > $max_post_id)
-				$max_post_id = $post['post_id'];
-		
-		if ($max_post_id > $last_post_id)
-			update_option('duoshuo_last_post_id', $max_post_id);
-		
-		delete_option('_duoshuo_sync_lock');
-		
-		return $imported;
-	}
-	
 	/**
 	 * 从服务器pull评论到本地
 	 * 
