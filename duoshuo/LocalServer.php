@@ -26,7 +26,8 @@ class Duoshuo_LocalServer{
 		}
 		
 		try{
-			$this->response['last_log_id'] = $this->plugin->syncLog();
+			$this->response['affected'] = $this->plugin->syncLog();
+			$this->response['last_log_id'] = $this->plugin->getOption('last_log_id');
 		}
 		catch(Exception $ex){
 			//$this->plugin->updateOption('sync_lock', $ex->getLine());
@@ -64,7 +65,8 @@ class Duoshuo_LocalServer{
 	
 		if (!method_exists($this, $method))
 			throw new Duoshuo_Exception('Unknown action.', Duoshuo_Exception::OPERATION_NOT_SUPPORTED);
-	
+		
+		$this->response = array();
 		$this->$method($input);
 		$this->sendResponse();
 	}
