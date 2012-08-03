@@ -63,7 +63,7 @@ require DUOSHUO_PLUGIN_PATH . '/Abstract.php';
 require DUOSHUO_PLUGIN_PATH . '/WordPress.php';
 
 function duoshuo_admin_initialize(){
-	global $wp_version, $duoshuoPlugin;
+	global $wp_version, $duoshuoPlugin, $plugin_page;
 	
 	//在admin界面内执行的action
 	// wordpress2.8 以后都支持这个过滤器
@@ -74,7 +74,8 @@ function duoshuo_admin_initialize(){
 			echo '<div class="updated"><p><strong>只要再<a href="' . admin_url('admin.php?page=duoshuo') . '">配置一下</a>多说帐号，多说就能开始为您服务了。</strong></p></div>';
 		}
 		
-		add_action('admin_notices', 'duoshuo_config_warning');
+		if ($plugin_page !== 'duoshuo')
+			add_action('admin_notices', 'duoshuo_config_warning');
 		return ;
 	}
 	
@@ -106,7 +107,6 @@ function duoshuo_admin_initialize(){
 	add_action('profile_update', array($duoshuoPlugin, 'syncUserToRemote'));
 	add_action('user_register', array($duoshuoPlugin, 'syncUserToRemote'));
 	
-	if (get_option('duoshuo_notice')) 
 	add_action('wp_dashboard_setup', 'duoshuo_add_dashboard_widget');
 	
 	//// backwards compatible (before WP 3.0)
@@ -206,8 +206,18 @@ function duoshuo_add_pages() {
 			'多说评论',
 			'moderate_comments',
 			'duoshuo',
-			array($duoshuoPlugin,'config'),
+			array($duoshuoPlugin, 'config'),
 			$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png' 
+		);
+	}
+	elseif(get_option('duoshuo_synchronized') === false){
+		add_object_page(
+			'数据同步',
+			'多说评论',
+			'moderate_comments',
+			'duoshuo',
+			array($duoshuoPlugin, 'sync'),
+			$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png'
 		);
 	}
 	elseif (current_user_can('moderate_comments')){
@@ -235,28 +245,24 @@ function duoshuo_add_pages() {
 	         'duoshuo-settings',//menu_slug
 	         array($duoshuoPlugin, 'settings')//function
 	    );
-	    if ($duoshuoPlugin->getUserMeta(wp_get_current_user()->ID, 'duoshuo_user_id')){
-		    add_submenu_page(
-		         'duoshuo',//$parent_slug
-		         '我的多说帐号',//page_title
-		         '我的多说帐号',//menu_title
-		         'level_0',//权限
-		         'duoshuo-profile',//menu_slug
-		         array($duoshuoPlugin, 'profile')//function
-		    );
-	    }
+	    add_submenu_page(
+	         'duoshuo',//$parent_slug
+	         '我的多说帐号',//page_title
+	         '我的多说帐号',//menu_title
+	         'level_0',//权限
+	         'duoshuo-profile',//menu_slug
+	         array($duoshuoPlugin, 'profile')//function
+	    );
 	}
 	elseif(current_user_can('level_0')){
-	    if ($duoshuoPlugin->getUserMeta(wp_get_current_user()->ID, 'duoshuo_user_id')){
-		    add_submenu_page(
-		         'profile.php',//$parent_slug
-		         '绑定社交帐号',//page_title
-		         '[多说]绑定社交帐号',//menu_title
-		         'level_0',//权限
-		         'duoshuo-profile',//menu_slug
-		         array($duoshuoPlugin, 'profile')//function
-		    );
-	    }
+        add_submenu_page(
+	         'profile.php',//$parent_slug
+	         '我的多说帐号',//page_title
+	         '我的多说帐号',//menu_title
+	         'level_0',//权限
+	         'duoshuo-profile',//menu_slug
+	         array($duoshuoPlugin, 'profile')//function
+	    );
 	}
 }
 
@@ -279,24 +285,33 @@ function duoshuo_register_settings(){
 }
 
 function duoshuo_request_handler(){
-	global $duoshuoPlugin;
+	global $duoshuoPlugin, $parent_file;
 	
-	if ($_SERVER['REQUEST_METHOD'] == 'POST'
-		&& isset($_GET['page'])
-		&& in_array($_GET['page'], array('duoshuo-settings', 'duoshuo')))
-		switch(true){
-			case isset($_POST['duoshuo_uninstall']):
-				$duoshuoPlugin->uninstall();
+	if ($_SERVER['REQUEST_METHOD'] == 'POST'){
+		if (isset($_GET['page']) && in_array($_GET['page'], array('duoshuo-settings', 'duoshuo')))
+			switch(true){
+				case isset($_POST['duoshuo_uninstall']):
+					$duoshuoPlugin->uninstall();
+					break;
+				case isset($_POST['duoshuo_local_options']):
+					$duoshuoPlugin->updateLocalOptions();
+					break;
+				default:
+			}
+	}
+	elseif ($_SERVER['REQUEST_METHOD'] == 'GET'){
+		switch ($parent_file){
+			case 'options-general.php':
+				if (isset($_GET['settings-updated']))
+					$duoshuoPlugin->updateSite();
 				break;
-			case isset($_POST['duoshuo_local_options']):
-				$duoshuoPlugin->updateLocalOptions();
+			case 'themes.php':
+				if (isset($_GET['activated']))
+					$duoshuoPlugin->updateSite();
 				break;
-			default:
-		}
-	elseif ($_SERVER['REQUEST_METHOD'] == 'GET' && isset($_GET['page']) && $_GET['page'] == 'duoshuo'){
-		switch(true){
-			case isset($_GET['duoshuo_connect_site']):
-				$duoshuoPlugin->connectSite();
+			case 'duoshuo':
+				if (isset($_GET['duoshuo_connect_site']))
+					$duoshuoPlugin->connectSite();
 				break;
 			default:
 		}

@@ -1,24 +1,27 @@
-<link rel="stylesheet" href="<?php echo $this->pluginDirUrl; ?>styles.css" type="text/css" />
 <div class="wrap">
-<?php echo screen_icon();?>
-<?php if (!($this->shortName && $this->secret)):
+<?php echo screen_icon();?><h2>注册站点</h2>
+<?php
+$user = wp_get_current_user();
 $params = $this->packageOptions() + array(
 	'system'	=>	'wordpress',
-	'callback'	=>	admin_url('admin.php?page=duoshuo')
+	'callback'	=>	admin_url('admin.php?page=duoshuo'),
+	'user_key'	=>	$user->ID,
+	'sync_log'	=>	1,
 );
 
 if ($this->shortName)
 	$params['short_name'] = $this->shortName;
 ?>
-<iframe src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" width="100%" height="600"></iframe>
-<?php else:?>
-<h2>设置多说站点</h2>
-<h3>数据同步</h3>
-<div id="ds-export">
-	<p class="message-start">安装成功了！只要一键将您的用户、文章和评论信息同步到多说，多说就可以开始为您服务了！<a href="javascript:void(0)" class="button-primary" onclick="fireExport();return false;">开始同步</a></p>
-	<p class="status"></p>
-	<p class="message-complete">同步完成，现在你可以<a href="<?php echo admin_url('admin.php?page=duoshuo-settings');?>">设置</a>或<a href="<?php echo admin_url('admin.php?page=duoshuo');?>">管理</a></p>
-</div>
-<?php include_once dirname(__FILE__) . '/common-script.html';?>
-<?php endif;?>
+<iframe id="duoshuo-remote-window" src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" width="100%" height="600"></iframe>
+<script>
+jQuery(function(){
+var $ = jQuery,
+	iframe = $('#duoshuo-remote-window'),
+	resetIframeHeight = function(){
+		iframe.height($(window).height() - iframe.offset().top - 70);
+	};
+resetIframeHeight();
+$(window).resize(resetIframeHeight);
+});
+</script>
 </div>

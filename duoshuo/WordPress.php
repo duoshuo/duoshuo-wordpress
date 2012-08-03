@@ -150,7 +150,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function originalCommentsNotice(){
 		echo '<div class="updated">'
 			. '<p>多说正在努力地为您的网站提供强大的社会化评论服务，WordPress原生评论数据现在仅用于备份；</p>'
-			. '<p>多说会将每一条评论实时写回本地数据库，但如果日后您在多说删除/修改了评论，并不会影响本地数据；</p>'
+			. '<p>多说会将每一条评论实时写回本地数据库，您在多说删除/修改了评论，也同样会同步到本地数据；</p>'
 			. '<p>您在本页做的任何管理评论操作，都不会对多说评论框上的评论起作用，请访问<a href="http://' . $this->shortName . '.' . self::DOMAIN . '/admin/" target="_blank">评论管理后台</a>进行评论管理。</p>'
 			. '</div>';
 	}
@@ -202,23 +202,27 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		/*if ($_SERVER['REQUEST_METHOD'] == 'POST' && !($this->shortName && $this->secret)){
 			self::registerSite();
 		}*/
-		include_once dirname(__FILE__) . '/config.php';
+		include dirname(__FILE__) . '/config.php';
+	}
+	
+	public function sync(){
+		include dirname(__FILE__) . '/sync.php';
 	}
 	
 	public function manage(){
-		include_once dirname(__FILE__) . '/manage.php';
+		include dirname(__FILE__) . '/manage.php';
 	}
 	
 	public function preferences(){
-		include_once dirname(__FILE__) . '/preferences.php';
+		include dirname(__FILE__) . '/preferences.php';
 	}
 	
 	public function settings(){
-		include_once dirname(__FILE__) . '/settings.php';
+		include dirname(__FILE__) . '/settings.php';
 	}
 
 	public function profile(){
-		include_once dirname(__FILE__) . '/profile.php';
+		include dirname(__FILE__) . '/profile.php';
 	}
 	
 	public function uninstall(){
@@ -413,9 +417,7 @@ if (window.duoshuoQuery && duoshuoQuery.sso)
 		update_option('duoshuo_secret', $_GET['secret']);
 		$this->shortName = $_GET['short_name'];
 		$this->secret = $_GET['secret'];
-		
-		$user = wp_get_current_user();
-		$this->joinSite($user);?>
+		?>
 <script>
 window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshuo'));?>;
 </script>
@@ -482,21 +484,24 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		}
 	}
 	
-	static $optionsMap = array(
-		'home'		=>	'url',
-		'siteurl'	=>	'siteurl',
-		'admin_email'=>	'admin_email',
-		'timezone_string'=>'timezone',
-		'use_smilies'=>	'use_smilies',
-		'current_theme'=>'system_theme',
-	);
-	
 	public function packageOptions(){
+		global $wp_version;
+		
 		$options = array(
-			'name'	=>	html_entity_decode(get_option('blogname'), ENT_QUOTES, 'UTF-8'),
-			'description'=>html_entity_decode(get_option('blogdescription'), ENT_QUOTES, 'UTF-8'),
+			'name'			=>	html_entity_decode(get_option('blogname'), ENT_QUOTES, 'UTF-8'),
+			'description'	=>	html_entity_decode(get_option('blogdescription'), ENT_QUOTES, 'UTF-8'),
+			'system_theme'	=>	function_exists('wp_get_theme') ? wp_get_theme()->get('Name') : get_current_theme(),//'current_theme'=>'system_theme',
+			'system_version'=>	$wp_version,
+			'plugin_version'=>	self::VERSION,
 		);
-		foreach(self::$optionsMap as $key => $value)
+		$optionsMap = array(
+			'home'		=>	'url',
+			'siteurl'	=>	'siteurl',
+			'admin_email'=>	'admin_email',
+			'timezone_string'=>'timezone',
+			'use_smilies'=>	'use_smilies',
+		);
+		foreach($optionsMap as $key => $value)
 			$options[$value] = get_option($key);
 		
 		$akismet_api_key = get_option('wordpress_api_key');
@@ -521,7 +526,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			$response = $this->getClient($user->ID)->request('POST', 'sites/settings', $params);
 			
 			if ($response['code'] != 0)
-				echo '<div id="message" class="updated fade"><p><strong>' . $response['errorMessage'] . '</strong></p></div>';
+				$this->errorMessages[] = $response['errorMessage'];
 		}
 		catch(Duoshuo_Exception $e){
 			update_option('duoshuo_connect_failed', time());
@@ -529,30 +534,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	}
 	
 	public function updatedOption($option, $oldvalue = null, $newvalue = null){
-		if (isset(self::$optionsMap[$option]))
-			$this->updateSite();
+		$options = array('blogname', 'blogdescription', 'home', 'siteurl', 'admin_email', 'timezone_string', 'use_smilies', 'system_theme', 'akismet_api_key');
 		
-		//'system_theme'=>get_current_theme(),
-	}
-	
-	/**
-	 * 
-	 */
-	public function joinSite($user){
-		$params = array(
-			'user'		=>	$this->packageUser($user),
-			//'unique'	=>	$unique,
-			//'short_name'=>	$this->shortName
-		);
-		try{
-			$remoteResponse = $this->getClient($user->ID)->request('POST', 'sites/join', $params);
-			// 在joinSite之前就已经记录了duoshuo_user_id
-			//if (isset($remoteResponse['response']))
-			//	$this->updateUserMeta($data['source_user_id'], 'duoshuo_user_id', $remoteResponse['response']['user_id']);
-		}
-		catch(Duoshuo_Exception $e){
-			update_option('duoshuo_connect_failed', time());
-		}
+		if (in_array($option, $options))
+			$this->needToUpdateSite = true;
 	}
 	
 	public function syncUserToRemote($userId){
