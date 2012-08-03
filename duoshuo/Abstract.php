@@ -159,4 +159,55 @@ class Duoshuo_Abstract {
 	            );
 	    return bin2hex($hmac);
 	}
+	
+	function exportUsers($users){
+		if (count($users) === 0)
+			return 0;
+	
+		$params = array('users'=>array());
+		foreach($users as $user)
+			$params['users'][] = $this->packageUser($user);
+		 
+		$remoteResponse = $this->getClient()->request('POST', 'users/import', $params);
+	
+		foreach($remoteResponse['response'] as $userId => $duoshuoUserId)
+			$this->updateUserMeta($userId, 'duoshuo_user_id', $duoshuoUserId);
+		
+		return count($users);
+	}
+	
+	function exportPosts($threads){
+		if (count($threads) === 0)
+			return 0;
+	
+		$params = array(
+			'threads'	=>	array(),
+		);
+		foreach($threads as $index => $thread){
+			$params['threads'][] = $this->packageThread($thread);
+		}
+	
+		$remoteResponse = $this->getClient()->request('POST','threads/import', $params);
+	
+		foreach($remoteResponse['response'] as $threadId => $duoshuoThreadId)
+			$this->updateThreadMeta($threadId, 'duoshuo_thread_id', $duoshuoThreadId);
+	
+		return count($threads);
+	}
+	
+	function exportComments($comments){
+		if (count($comments) === 0)
+			return 0;
+	
+		$params = array(
+			'posts'	=>	array()
+		);
+	
+		foreach($comments as $comment)
+			$params['posts'][] = $this->packageComment($comment);
+	
+		$remoteResponse = $this->getClient()->request('POST', 'posts/import', $params);
+	
+		return count($comments);
+	}
 }

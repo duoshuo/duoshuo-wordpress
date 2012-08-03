@@ -84,6 +84,10 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			: get_usermeta($userId, $metaKey);
 	}
 	
+	public function updateThreadMeta($threadId, $metaKey, $metaValue){
+		return update_post_meta($threadId, $metaKey, $metaValue);
+	}
+	
 	public function threadKey($post){
 		return $post->post_status == 'inherit'
 			? ($post->post_parent ? $post->post_parent : null)
@@ -113,10 +117,23 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function userLogin($token){
 		global $wpdb, $error;
 		
-		$user_id = $wpdb->get_var("SELECT user_id FROM {$wpdb->usermeta} WHERE meta_value = '$token[user_id]' AND meta_key = 'duoshuo_user_id'");
-		
 		nocache_headers();
-		if ($user_id === null){
+		if (isset($token['user_key'])){//登陆成功
+			$user = get_user_by('id', $token['user_key']);
+			
+			$this->updateUserMeta($user->ID, 'duoshuo_access_token', $token['access_token']);
+			
+			wp_clear_auth_cookie();
+			wp_set_auth_cookie($user->ID, true, is_ssl());
+			wp_set_current_user($user->ID);
+			
+			if (isset($_GET['redirect_to'])){
+				// wordpress 采用的是redirect_to字段
+				wp_redirect($_GET['redirect_to']);
+				exit;
+			}
+		}
+		else{
 			//	TODO
 			//	如果站点开启注册
 			//	如果站点不开启注册，则把用户带回入口页
@@ -128,35 +145,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 				$error = '你授权的社交帐号没有和本站的用户帐号绑定；<br />如果你是本站注册用户，请先登录之后绑定社交帐号';
 			}
 		}
-		else{//登陆成功
-			$user_id = (int) $user_id;
-			
-			$this->updateUserMeta($user_id, 'duoshuo_access_token', $token['access_token']);
-			
-			wp_clear_auth_cookie();
-			wp_set_auth_cookie($user_id, true, is_ssl());
-			wp_set_current_user($user_id);
-			
-			if (isset($_GET['redirect_to'])){
-				// wordpress 采用的是redirect_to字段
-				wp_redirect($_GET['redirect_to']);
-				exit;
-			}
-		}
 	}
-	
-	/*
-	static function logout(){
-		$query = array(
-			'redirect_uri'=> !empty( $_REQUEST['redirect_to'] ) ? $_REQUEST['redirect_to'] : site_url('wp-login.php') . '?loggedout=true',
-			'sso'		=>	1,
-		);
-		$logoutUrl = 'http://' . $this->shortName . '.duoshuo.com/logout/?' . http_build_query($query, null, '&');
-		
-		wp_redirect( $logoutUrl );
-		exit;
-	}
-	*/
 	
 	public function originalCommentsNotice(){
 		echo '<div class="updated">'
@@ -231,40 +220,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function profile(){
 		include_once dirname(__FILE__) . '/profile.php';
 	}
-	/*
-	public function checkAccessToken(){
-		$user = wp_get_current_user();
-		
-		if (isset($_GET['code'])){
-			$oauth = new Duoshuo_Client($this->shortName, $this->secret);
-			
-			$keys = array(
-				'code'	=> $_GET['code'],
-				'redirect_uri' => 'http://duoshuo.com/login-callback/weibo/',
-			);
-			
-			$token = $oauth->getAccessToken('code', $keys);
-			
-			if ($token['code'] != 0)
-				return false;
-			
-			$this->updateUserMeta($user->ID, 'duoshuo_user_id', $token['user_id']);
-			$this->updateUserMeta($user->ID, 'duoshuo_access_token', $token['access_token']);
-			// TODO 这里缺少expires
-			
-			return true;
-		}
-		else{
-			$duoshuoUserId = $this->getUserMeta($user->ID, 'duoshuo_user_id');
-			$accessToken = $this->getUserMeta($user->ID, 'duoshuo_access_token');
-			if (!$duoshuoUserId || !$accessToken){
-				include_once dirname(__FILE__) . '/bind.php';
-				return false;
-			}
-			return true;
-		}
-	}
-	*/
+	
 	public function uninstall(){
 		//delete_option('duoshuo_short_name');
 		delete_option('duoshuo_secret');
@@ -306,7 +262,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	}
 	
 	public function commentsTemplate($value){
-	    global $post, $comments;
+		global $wpdb, $post, $comments;
 		
 	    $topPost = $this->topPost($post);
 	    
@@ -327,7 +283,8 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    	$this->syncUserToRemote($topPost->post_author);
 	    	$this->syncPostToRemote($topPost->ID, $topPost);
 		    try{
-		    	$this->syncPostComments($topPost);
+		    	$comments = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->comments where comment_post_ID = %d AND comment_agent NOT LIKE 'Duoshuo/%%' order by comment_ID asc", $topPost->ID));
+		    	$this->exportComments($comments);
 		    }
 		    catch(Duoshuo_Exception $e){
 		    	update_option('duoshuo_connect_failed', time());
@@ -467,6 +424,8 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	}
 	
 	public function export(){
+		global $wpdb;
+		
 		@set_time_limit(0);
 		@ini_set('memory_limit', '256M');
 		@ini_set('display_errors', $this->getOption('debug'));
@@ -482,15 +441,21 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			switch($type){
 				case 'user':
 					$limit = 30;
-					$count = $this->exportUsers($limit, $offset);
+					// 不包括user_login, user_pass
+					$columns = array('ID', 'user_nicename', 'user_email', 'user_url', 'user_registered', 'display_name');
+					$users = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->users order by ID asc limit $offset,$limit"));
+					$count = $this->exportUsers($users);
 					break;
 				case 'post':
 					$limit = 10;
-					$count = $this->exportPosts($limit, $offset);
+					$columns = array('ID', 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_title', 'post_excerpt', 'post_status', 'comment_status', 'ping_status', 'post_name', 'post_modified_gmt', 'guid', 'post_type', 'post_parent');
+					$posts = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->posts where post_type not in ('attachment', 'nav_menu_item', 'revision') and post_status not in ('auto-draft', 'draft', 'trash', 'inherit') order by ID asc limit $offset,$limit") );// 'inherit' 不再进行同步
+					$count = $this->exportPosts($posts);
 					break;
 				case 'comment':
 					$limit = 50;
-					$count = $this->exportComments($limit, $offset);
+					$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE 'Duoshuo/%%' order by comment_ID asc limit $offset,$limit"));
+					$count = $this->exportComments($comments);
 					break;
 				default:
 			}
@@ -515,72 +480,6 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		catch(Duoshuo_Exception $e){
 			$this->sendException($e);
 		}
-	}
-	
-	public function exportUsers($limit, $offset = 0){
-		global $wpdb;
-		
-		// 不包括user_login, user_pass
-		$columns = array('ID', 'user_nicename', 'user_email', 'user_url', 'user_registered', 'display_name');
-		$users = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->users order by ID asc limit $offset,$limit"));
-		
-		if (count($users) === 0)
-			return 0;
-		
-		$params = array('users'=>array());
-		$blog_prefix = $this->get_blog_prefix();
-	    foreach($users as $user){
-		    $user->capabilities = $this->getUserMeta($user->ID, $blog_prefix.'capabilities');
-		    $params['users'][] = get_object_vars($user);
-	    }
-		
-		$remoteResponse = $this->getClient()->request('POST', 'import/wordpressUsers', $params);
-	
-		foreach($remoteResponse['response'] as $userId => $duoshuoUserId)
-			$this->updateUserMeta($userId, 'duoshuo_user_id', $duoshuoUserId);
-		
-		return count($users);
-	}
-	
-	public function packageUser($user){
-		global $wpdb;
-		
-		if ($user instanceof WP_User){	//	wordpress 3.3
-			$userData = $user->data;
-			unset($userData->user_pass);
-			unset($userData->user_login);
-			$capabilities = $user->caps;
-		}
-		else{
-			$userData = $user;
-			unset($userData->user_pass);
-			unset($userData->user_login);
-			$capabilities = $this->getUserMeta($user->ID, $this->get_blog_prefix().'capabilities', true);
-		}
-		
-		$data = array(
-			'key'		=>	$userData->ID,
-			'name'		=>	$userData->display_name,
-			'email'		=>	$userData->user_email,
-			'url'		=>	$userData->user_url,
-			'created_at'=>	$userData->user_registered,
-		);
-		
-		$roleMap = array(
-			'administrator'	=>	'administrator',
-			'editor'		=>	'editor',
-			'author'		=>	'author',
-			'contributor'	=>	'user',
-			'subscriber'	=>	'user',
-		);
-		
-		foreach($roleMap as $wpRole => $role)
-			if (isset($capabilities[$wpRole]) && $capabilities[$wpRole]){
-				$data['role'] = $role;
-				break;
-			}
-		
-		return $data;
 	}
 	
 	static $optionsMap = array(
@@ -640,8 +539,6 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	 * 
 	 */
 	public function joinSite($user){
-		//global $wpdb;
-		
 		$params = array(
 			'user'		=>	$this->packageUser($user),
 			//'unique'	=>	$unique,
@@ -659,63 +556,18 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	}
 	
 	public function syncUserToRemote($userId){
-		global $wpdb;
-		
 		if (!$this->connected())
 			return ;
 		
+		//	WP_User
 		$user = get_userdata($userId);
 		
-		if ($user instanceof WP_User){	//	wordpress 3.3
-			$userData = $user->data;
-			unset($userData->user_pass);
-			unset($userData->user_login);
-			$userData->capabilities = $user->caps;
-		}
-		else{
-			$userData = $user;
-			unset($userData->user_pass);
-			unset($userData->user_login);
-			$blog_prefix = $this->get_blog_prefix();
-			$userData->capabilities = $this->getUserMeta($user->ID, $blog_prefix.'capabilities', true);
-		}
-		
-		$params = array('users'=>array(get_object_vars($userData)), 'short_name'=>$this->shortName);
 		try{
-			$remoteResponse = $this->getClient()->request('POST','import/wordpressUsers', $params);
-		
-			if (isset($remoteResponse['response'])){
-				foreach($remoteResponse['response'] as $userId => $duoshuoUserId)
-					$this->updateUserMeta($userId, 'duoshuo_user_id', $duoshuoUserId);
-			}
+			$this->exportUsers(array($userData));
 		}
 		catch(Duoshuo_Exception $e){
 			update_option('duoshuo_connect_failed', time());
 		}
-	}
-	
-	public function exportPosts($limit, $offset = 0){
-		global $wpdb;
-		
-		$columns = array('ID', 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_title', 'post_excerpt', 'post_status', 'comment_status', 'ping_status', 'post_name', 'post_modified_gmt', 'guid', 'post_type', 'post_parent');
-		$posts = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->posts where post_type not in ('attachment', 'nav_menu_item', 'revision') and post_status not in ('auto-draft', 'draft', 'trash', 'inherit') order by ID asc limit $offset,$limit") );// 'inherit' 不再进行同步
-		
-		if (count($posts) === 0)
-			return 0;
-		
-		$params = array(
-			'threads'	=>	array(),
-		);
-		foreach($posts as $index => $post){
-			$params['threads'][] = $this->packagePost($post);
-		}
-		
-		$remoteResponse = $this->getClient()->request('POST','import/wordpressPosts', $params);
-		
-		foreach($remoteResponse['response'] as $postId => $threadId)
-			update_post_meta($postId, 'duoshuo_thread_id', $threadId);
-		
-		return count($posts);
 	}
 	
 	/**
@@ -723,6 +575,9 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	 * @param string $postId
 	 */
 	public function syncPostToRemote($postId, $post = null){
+		if (!$this->connected())
+			return ;
+		
 		if ($post == null)
 			$post = get_post($postId);
 		
@@ -730,10 +585,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			|| in_array($post->post_status, array('inherit', 'auto-draft', 'draft', 'trash')))	//'inherit' 不再进行同步
 			return ;
 		
-		if (!$this->connected())
-			return ;
-		
-		$params = $this->packagePost($post);
+		$params = $this->packageThread($post);
 		
 		if (isset($_POST['sync_to'])){
 			if ($_POST['sync_to'][0] == 'placeholder')
@@ -752,7 +604,47 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		}
 	}
 	
-	public function packagePost($post){
+	public function packageUser($user){
+		$data = array(
+				'user_key'	=>	$userData->ID,
+				'name'		=>	$userData->display_name,
+				'email'		=>	$userData->user_email,
+				'url'		=>	$userData->user_url,
+				'created_at'=>	$userData->user_registered,
+				'meta'		=>	json_encode($row),
+		);
+	
+		static $roleMap = array(
+				'administrator'	=>	'administrator',
+				'editor'		=>	'editor',
+				'author'		=>	'author',
+				'contributor'	=>	'user',
+				'subscriber'	=>	'user',
+		);
+	
+		if ($user instanceof WP_User){	//	wordpress 3.3
+			$userData = $user->data;
+			unset($userData->user_pass);
+			unset($userData->user_login);
+			$capabilities = $user->caps;
+		}
+		else{
+			$userData = $user;
+			unset($userData->user_pass);
+			unset($userData->user_login);
+			$capabilities = $this->getUserMeta($user->ID, $this->get_blog_prefix().'capabilities', true);
+		}
+	
+		foreach($roleMap as $wpRole => $role)
+			if (isset($capabilities[$wpRole]) && $capabilities[$wpRole]){
+			$data['role'] = $role;
+			break;
+		}
+	
+		return $data;
+	}
+	
+	public function packageThread($post){
 		$post->custom = get_post_custom($post->ID);
 		$meta = clone ($post);
 		unset($meta->post_title);
@@ -770,6 +662,8 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		unset($meta->ID);
 		
 		$params = array(
+			'thread_key'=>	$post->ID,
+			'author_key'=>	$post->post_author,
 			'title'		=>	html_entity_decode($post->post_title, ENT_QUOTES, 'UTF-8'),
 			'content'	=>	$post->post_content,
 			'excerpt'	=>	$post->post_excerpt,
@@ -785,8 +679,6 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			'type'		=>	$post->post_type,
 			'meta'		=>	json_encode($meta),
 			'source'	=>	'wordpress',
-			'author_key'=>	$post->post_author,
-			'thread_key'=>	$post->ID,
 		);
 		
 		if (!class_exists('nggLoader') || class_exists('nggRewrite'))
@@ -820,50 +712,66 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		if (!empty($images))
 			$params['images'] = json_encode($images);
 		
+		/*
 		$authorId = $this->getUserMeta($post->post_author, 'duoshuo_user_id', true);
 		if (!empty($authorId))
 			$params['author_id'] = $authorId;
 		
 		$threadId = get_post_meta($post->ID, 'duoshuo_thread_id', true);
 		if (!empty($threadId))
-			$params['thread_id'] = $threadId;
+			$params['thread_id'] = $threadId;*/
 		return $params;
 	}
 	
-	public function exportComments($limit, $offset = 0){
-		global $wpdb;
+	public function packageComment($comment){
+		static $statusMap = array(
+			'0'		=>	'pending',
+			'1'		=>	'approved',
+			'trash'	=>	'deleted',
+			'spam'	=>	'spam',
+			'post-trashed'=>'thread-deleted',
+		);
+		$meta = clone ($comment);
+		unset($meta->comment_ID);
+		unset($meta->comment_post_ID);
+		unset($meta->comment_author);
+		unset($meta->comment_author_email);
+		unset($meta->comment_author_url);
+		unset($meta->comment_author_IP);
+		unset($meta->comment_date_gmt);
+		unset($meta->comment_content);
+		unset($meta->comment_karma);
+		unset($meta->comment_approved);
+		unset($meta->comment_agent);
+		unset($meta->comment_type);
+		unset($meta->comment_parent);
+		unset($meta->user_id);
+
+		$data = array(
+			'thread_key'	=>	$comment->comment_post_ID,
+			'post_key'		=>	$comment->comment_ID,
+			'author_key'	=>	$comment->user_id,
+			'author_name'	=>	htmlspecialchars_decode($comment->comment_author, ENT_QUOTES),
+			'author_email'	=>	$comment->comment_author_email,
+			'author_url'	=>	$comment->comment_author_url,
+			'created_at'	=>	str_replace(' ', 'T', $comment->comment_date_gmt) . '+00:00',
+			'message'		=>	$comment->comment_content,
+			'agent'			=>	$comment->comment_agent,
+			'type'			=>	$comment->comment_type,
+			'ip'			=>	$comment->comment_author_IP,
+			'status'		=>	$statusMap[$comment->comment_approved],
+			'parent_key'	=>	$comment->comment_parent,	// TODO 接收的地方要处理一下
+			'meta'			=>	json_encode($meta),			//	comment_date, comment_karma
+		);
+		//'source'		=>	'import',
 		
-		$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE 'Duoshuo/%%' order by comment_ID asc limit $offset,$limit"), ARRAY_A);
-		
-		if (count($comments) === 0)
-			return 0;
-		 
-		$remoteResponse = $this->getClient()->request('POST', 'import/wordpressComments', array('posts'=>$comments));
-		
-		return count($comments);
+		return $data;
 	}
 	
 	public function exportOneComment($comment_ID){
-		$comment = get_object_vars(get_comment($comment_ID));
+		$comment = get_comment($comment_ID);
 		
-		$remoteResponse = $this->getClient()->request('POST', 'import/wordpressComments', array('posts'=>array($comment)));
-		
-		return $remoteResponse;
-	}
-	
-	public function syncPostComments($post){
-		global $wpdb;
-		
-		$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_post_ID = %d AND comment_agent NOT LIKE 'Duoshuo/%%' order by comment_ID asc", $post->ID), ARRAY_A);
-	    
-		if (count($comments) === 0)
-			return 0;
-		
-		$params = array('posts'		=> $comments);
-		
-		$remoteResponse = $this->getClient($post->post_author)->request('POST','import/wordpressComments', $params);
-		
-		return $remoteResponse;
+		return $this->exportComments(array($comment));
 	}
 	
 	/**
@@ -905,7 +813,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		);
 			
 		if ($post['parent_id']){
-			$parent_id = $wpdb->get_var( "SELECT comment_id FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value = $post[parent_id]");
+			$parent_id = $wpdb->get_var( "SELECT comment_ID FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value = '$post[parent_id]'");
 		
 			if (isset($parent_id))
 				$data['comment_parent'] = $parent_id;
@@ -920,6 +828,12 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		
 		if (isset($post['post_key'])){
 			$data['comment_ID'] = $post['post_key'];
+		}
+		elseif(isset($post['post_id'])){
+			$data['comment_ID'] = $wpdb->get_var( "SELECT comment_ID FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value = '$post[post_id]'");
+		}
+		
+		if(isset($data['comment_ID'])){
 			//	wp_update_comment 中会做 wp_filter_comment
 			wp_update_comment($data);
 		}
@@ -928,7 +842,11 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			$data['comment_ID'] = wp_insert_comment($data);
 		}
 		
-		update_comment_meta($data['comment_ID'], 'duoshuo_parent_id', $post['parent_id']);
+		if ($post['parent_id'])
+			update_comment_meta($data['comment_ID'], 'duoshuo_parent_id', $post['parent_id']);
+		else
+			delete_comment_meta($data['comment_ID'], 'duoshuo_parent_id');
+		
         update_comment_meta($data['comment_ID'], 'duoshuo_post_id', $post['post_id']);
         
         return array($post_id);
@@ -937,10 +855,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function deleteForeverPost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
 		foreach ($results as $result)
-	        wp_delete_comment($result->comment_id, true);
+	        wp_delete_comment($result->comment_ID, true);
 	    
 	    return array();
 	}
@@ -948,10 +866,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function deletePost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
 		foreach ($results as $result)
-	        wp_trash_comment($result->comment_id);
+	        wp_trash_comment($result->comment_ID);
 	    
 	    return array();
 	}
@@ -959,10 +877,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function spamPost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
 		foreach($results as $result)
-			wp_spam_comment($result->comment_id);
+			wp_spam_comment($result->comment_ID);
 		
 		return array();
 	}
@@ -970,10 +888,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function approvePost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_id, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
 		foreach ($results as $result)
-			wp_set_comment_status($result->comment_id, 'approve');
+			wp_set_comment_status($result->comment_ID, 'approve');
 		
 		return array();
 	}
