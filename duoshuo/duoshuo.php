@@ -83,7 +83,7 @@ function duoshuo_admin_initialize(){
 	
 	add_action('switch_theme', array($duoshuoPlugin, 'updateSite'));
 	//	support from WP 2.9
-	add_action('updated_option', array($duoshuoPlugin, 'updatedOption'));
+	//add_action('updated_option', array($duoshuoPlugin, 'updatedOption'));
 	
 	add_filter('post_row_actions', array($duoshuoPlugin, 'actionsFilter'));
 	
@@ -288,25 +288,20 @@ function duoshuo_request_handler(){
 	global $duoshuoPlugin, $parent_file;
 	
 	if ($_SERVER['REQUEST_METHOD'] == 'POST'){
-		if (isset($_GET['page']) && in_array($_GET['page'], array('duoshuo-settings', 'duoshuo')))
-			switch(true){
-				case isset($_POST['duoshuo_uninstall']):
+		switch ($parent_file){
+			case 'duoshuo':
+				if (isset($_POST['duoshuo_uninstall'])
 					$duoshuoPlugin->uninstall();
-					break;
-				case isset($_POST['duoshuo_local_options']):
+				if (isset($_POST['duoshuo_local_options'])
 					$duoshuoPlugin->updateLocalOptions();
-					break;
-				default:
-			}
+				break;
+			default:
+		}
 	}
 	elseif ($_SERVER['REQUEST_METHOD'] == 'GET'){
 		switch ($parent_file){
 			case 'options-general.php':
 				if (isset($_GET['settings-updated']))
-					$duoshuoPlugin->updateSite();
-				break;
-			case 'themes.php':
-				if (isset($_GET['activated']))
 					$duoshuoPlugin->updateSite();
 				break;
 			case 'duoshuo':

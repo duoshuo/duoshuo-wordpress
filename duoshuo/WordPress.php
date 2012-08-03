@@ -532,13 +532,13 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			update_option('duoshuo_connect_failed', time());
 		}
 	}
-	
+	/*
 	public function updatedOption($option, $oldvalue = null, $newvalue = null){
 		$options = array('blogname', 'blogdescription', 'home', 'siteurl', 'admin_email', 'timezone_string', 'use_smilies', 'system_theme', 'akismet_api_key');
 		
 		if (in_array($option, $options))
 			$this->needToUpdateSite = true;
-	}
+	}*/
 	
 	public function syncUserToRemote($userId){
 		if (!$this->connected())
