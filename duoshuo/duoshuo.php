@@ -106,6 +106,7 @@ function duoshuo_admin_initialize(){
 	add_action('profile_update', array($duoshuoPlugin, 'syncUserToRemote'));
 	add_action('user_register', array($duoshuoPlugin, 'syncUserToRemote'));
 	
+	if (get_option('duoshuo_notice')) 
 	add_action('wp_dashboard_setup', 'duoshuo_add_dashboard_widget');
 	
 	//// backwards compatible (before WP 3.0)
@@ -262,7 +263,7 @@ function duoshuo_add_pages() {
 function duoshuo_add_dashboard_widget(){
 	global $duoshuoPlugin;
 	
-	wp_add_dashboard_widget('dashboard_duoshuo', '多说', array($duoshuoPlugin, 'dashboardWidget'));
+	wp_add_dashboard_widget('dashboard_duoshuo', '多说最新评论', array($duoshuoPlugin, 'dashboardWidget'), array($duoshuoPlugin, 'dashboardWidgetControl'));
 }
 
 function duoshuo_register_settings(){

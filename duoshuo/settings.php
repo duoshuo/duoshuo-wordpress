@@ -62,7 +62,10 @@
 
 <h3>意见反馈</h3>
 <p>你的意见是多说成长的原动力，<a href="http://dev.duoshuo.com/discussion">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
-
+<p>
+	<iframe width="120" height="23" frameborder="0" allowtransparency="true" marginwidth="0" marginheight="0" scrolling="no" frameborder="No" border="0" src="http://widget.weibo.com/relationship/followbutton.php?language=zh_cn&width=120&height=24&uid=2468548203&style=2&btn=red&dpc=1"></iframe>
+	<iframe id="previewmc" src="http://follow.v.t.qq.com/index.php?c=follow&a=quick&name=duo-shuo&style=3&t=1327999237149&f=1" allowtransparency="true" style="margin:0 auto;" frameborder="0" height="23" scrolling="no" width="100"></iframe>
+</p>
 <?php
 $services = array(
 	'qzone'	=>	'QQ空间',

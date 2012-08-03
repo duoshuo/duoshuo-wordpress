@@ -1018,19 +1018,40 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		if ( !$widget_options = get_option( 'dashboard_widget_options' ) )
 			$widget_options = array();
 	
-		if ( !isset($widget_options['dashboard_recent_comments']) )
-			$widget_options['dashboard_recent_comments'] = array();
+		if ( !isset($widget_options['dashboard_duoshuo']) )
+			$widget_options['dashboard_duoshuo'] = array();
 	
-		if ( 'POST' == $_SERVER['REQUEST_METHOD'] && isset($_POST['widget-recent-comments']) ) {
-			$number = absint( $_POST['widget-recent-comments']['items'] );
-			$widget_options['dashboard_recent_comments']['items'] = $number;
+		$widgets = get_option( 'dashboard_widget_options' );
+		$total_items = isset( $widgets['dashboard_duoshuo'] ) && isset( $widgets['dashboard_duoshuo']['items'] )
+			? absint( $widgets['dashboard_duoshuo']['items'] ) : 5;
+		
+		echo '<ul class="ds-recent-comments" data-num-items="' . $total_items . '"></ul>';
+		 
+		$this->printScripts();
+	}
+	
+	/**
+	 * The recent comments dashboard widget control.
+	 *
+	 * @since 3.0.0
+	 */
+	public function dashboardWidgetControl() {
+		if ( !$widget_options = get_option( 'dashboard_widget_options' ) )
+			$widget_options = array();
+	
+		if ( !isset($widget_options['dashboard_duoshuo']) )
+			$widget_options['dashboard_duoshuo'] = array();
+	
+		if ( 'POST' == $_SERVER['REQUEST_METHOD'] && isset($_POST['widget-duoshuo']) ) {
+			$number = absint( $_POST['widget-duoshuo']['items'] );
+			$widget_options['dashboard_duoshuo']['items'] = $number;
 			update_option( 'dashboard_widget_options', $widget_options );
 		}
 	
-		$number = isset( $widget_options['dashboard_recent_comments']['items'] ) ? (int) $widget_options['dashboard_recent_comments']['items'] : '';
+		$number = isset( $widget_options['dashboard_duoshuo']['items'] ) ? (int) $widget_options['dashboard_duoshuo']['items'] : '';
 	
 		echo '<p><label for="comments-number">' . __('Number of comments to show:') . '</label>';
-		echo '<input id="comments-number" name="widget-recent-comments[items]" type="text" value="' . $number . '" size="3" /></p>';
+		echo '<input id="comments-number" name="widget-duoshuo[items]" type="text" value="' . $number . '" size="3" /></p>';
 	}
 	
 	public function updateLocalOptions(){
