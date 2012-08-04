@@ -290,9 +290,9 @@ function duoshuo_request_handler(){
 	if ($_SERVER['REQUEST_METHOD'] == 'POST'){
 		switch ($parent_file){
 			case 'duoshuo':
-				if (isset($_POST['duoshuo_uninstall'])
+				if (isset($_POST['duoshuo_uninstall']))
 					$duoshuoPlugin->uninstall();
-				if (isset($_POST['duoshuo_local_options'])
+				if (isset($_POST['duoshuo_local_options']))
 					$duoshuoPlugin->updateLocalOptions();
 				break;
 			default:
