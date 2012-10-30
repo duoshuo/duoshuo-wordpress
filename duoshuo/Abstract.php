@@ -2,7 +2,7 @@
 class Duoshuo_Abstract {
 	const DOMAIN = 'duoshuo.com';
 	const STATIC_DOMAIN = 'static.duoshuo.com';
-	const VERSION = '0.8';
+	const VERSION = '0.9';
 	
 	/**
 	 * 
@@ -20,7 +20,7 @@ class Duoshuo_Abstract {
 			if (!isset($_GET['code']))
 			return false;
 		
-		$oauth = new Duoshuo_Client($this->shortName, $this->secret);
+		$oauth = $this->getClient();
 		
 		$keys = array(
 			'code'	=> $_GET['code'],
@@ -33,6 +33,15 @@ class Duoshuo_Abstract {
 			return false;
 		
 		$this->userLogin($token);
+	}
+	
+	/**
+	 * 默认的获取Client的函数，可以被派生
+	 * @param string|int $userId
+	 * @return Duoshuo_Client
+	 */
+	public function getClient($userId = 0){
+		return new Duoshuo_Client($this->shortName, $this->secret);
 	}
 	
 	public function syncLog(){
@@ -65,6 +74,9 @@ class Duoshuo_Abstract {
 				return;
 			}
 			
+			if (is_string($response) || !isset($response['response']))
+				return;
+			
 			foreach($response['response'] as $log){
 				switch($log['action']){
 					case 'create':
@@ -91,7 +103,7 @@ class Duoshuo_Abstract {
 				if (is_array($affected))
 					$affectedThreads = array_merge($affectedThreads, $affected);
 		
-				if ($log['log_id'] > $last_log_id)
+				if (strlen($log['log_id']) > strlen($last_log_id) || strcmp($log['log_id'], $last_log_id) > 0)
 					$last_log_id = $log['log_id'];
 			}
 			
@@ -169,9 +181,11 @@ class Duoshuo_Abstract {
 			$params['users'][] = $this->packageUser($user);
 		 
 		$remoteResponse = $this->getClient()->request('POST', 'users/import', $params);
-	
-		foreach($remoteResponse['response'] as $userId => $duoshuoUserId)
-			$this->updateUserMeta($userId, 'duoshuo_user_id', $duoshuoUserId);
+		
+		if (isset($remoteResponse['response'])){
+			foreach($remoteResponse['response'] as $userId => $duoshuoUserId)
+				$this->updateUserMeta($userId, 'duoshuo_user_id', $duoshuoUserId);
+		}
 		
 		return count($users);
 	}
@@ -188,10 +202,12 @@ class Duoshuo_Abstract {
 		}
 	
 		$remoteResponse = $this->getClient()->request('POST','threads/import', $params);
-	
-		foreach($remoteResponse['response'] as $threadId => $duoshuoThreadId)
-			$this->updateThreadMeta($threadId, 'duoshuo_thread_id', $duoshuoThreadId);
-	
+		
+		if (isset($remoteResponse['response'])){
+			foreach($remoteResponse['response'] as $threadId => $duoshuoThreadId)
+				$this->updateThreadMeta($threadId, 'duoshuo_thread_id', $duoshuoThreadId);
+		}
+		
 		return count($threads);
 	}
 	

@@ -1,7 +1,7 @@
 <?php
 class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
-	const VERSION = '0.8';
+	const VERSION = '0.9';
 	
 	protected static $_instance = null;
 	
@@ -29,6 +29,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		
 		$defaultOptions = array(
 			'duoshuo_debug'					=>	0,
+			'duoshuo_api_hostname'			=>	'api.duoshuo.com',
 			'duoshuo_cron_sync_enabled'		=>	1,
 			'duoshuo_seo_enabled'			=>	1,
 			'duoshuo_cc_fix'				=>	1,
@@ -166,36 +167,16 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			$accessToken = $this->getUserMeta($userId, 'duoshuo_access_token');
 			
 			if (is_string($accessToken))
-				return new Duoshuo_Client($this->shortName, $this->secret, $remoteAuth, $accessToken);
+				$client = new Duoshuo_Client($this->shortName, $this->secret, $remoteAuth, $accessToken);
 		}
-		return new Duoshuo_Client($this->shortName, $this->secret, $remoteAuth);
-	}
-	
-	/**
-	 * 
-	 * @param $action
-	 * @param $params
-	 * @throws Duoshuo_Exception
-	 * @return string
-	 */
-	public function getHtml($action, $params){
-		$params['remote_auth'] = $this->remoteAuth($this->userData());
-		$url = 'http://' . $this->shortName . '.duoshuo.com/' . $action . '/?' . http_build_query($params, null, '&');
-		$args = array(
-			'method' => 'GET',
-			'timeout' => 10,
-			'redirection' => 5,
-			'httpversion' => '1.0',
-			//'user-agent' => $this->userAgent,
-		);
+		if (!isset($client))
+			$client = new Duoshuo_Client($this->shortName, $this->secret, $remoteAuth);
 		
-		$http = new WP_Http();
-		$response = $http->request($url, $args);
-		if (isset($response->errors)){
-			update_option('duoshuo_connect_failed', time());
-            throw new Duoshuo_Exception('连接服务器失败,详细信息：' . json_encode($response->errors), Duoshuo_Exception::REQUEST_TIMED_OUT);
-		}
-		return $response['body'];
+		$apiHostname = $this->getOption('api_hostname');
+		if ($apiHostname)
+			$client->end_point = 'http://' . $apiHostname . '/';
+		
+		return $client;
 	}
 	
 	public function config(){
@@ -287,7 +268,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    	$this->syncUserToRemote($topPost->post_author);
 	    	$this->syncPostToRemote($topPost->ID, $topPost);
 		    try{
-		    	$comments = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->comments where comment_post_ID = %d AND comment_agent NOT LIKE 'Duoshuo/%%' order by comment_ID asc", $topPost->ID));
+		    	$comments = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->comments where comment_post_ID = %d AND comment_agent NOT LIKE '%|Duoshuo/%%' order by comment_ID asc", $topPost->ID));
 		    	$this->exportComments($comments);
 		    }
 		    catch(Duoshuo_Exception $e){
@@ -338,8 +319,8 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    }
 	}
 	
-	public function buildQuery(){
-		return array(
+	public function buildQuery($options = array()){
+		$query = array(
 			'short_name'	=>	$this->shortName,
 			'sso'	=>	array(
 				'login'=>	site_url('wp-login.php', 'login') .'?action=duoshuo_login',
@@ -347,6 +328,9 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			),
 			'remote_auth'	=>	$this->remoteAuth($this->userData()),
 		);
+		if (!empty($options))
+			$query['options'] = $options;
+		return $query;
 	}
 	
 	public function appendScripts(){
@@ -456,7 +440,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 					break;
 				case 'comment':
 					$limit = 50;
-					$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE 'Duoshuo/%%' order by comment_ID asc limit $offset,$limit"));
+					$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE '%|Duoshuo/%%' order by comment_ID asc limit $offset,$limit"));
 					$count = $this->exportComments($comments);
 					break;
 				default:
@@ -488,26 +472,23 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		global $wp_version;
 		
 		$options = array(
+			'url'			=>	get_option('home'),
+			'siteurl'		=>	get_option('siteurl'),
+			'admin_email'	=>	get_option('admin_email'),
+			'timezone'		=>	get_option('timezone_string'),
+			'use_smilies'	=>	get_option('use_smilies'),
 			'name'			=>	html_entity_decode(get_option('blogname'), ENT_QUOTES, 'UTF-8'),
 			'description'	=>	html_entity_decode(get_option('blogdescription'), ENT_QUOTES, 'UTF-8'),
 			'system_theme'	=>	function_exists('wp_get_theme') ? wp_get_theme()->get('Name') : get_current_theme(),//'current_theme'=>'system_theme',
 			'system_version'=>	$wp_version,
 			'plugin_version'=>	self::VERSION,
+			'local_api_url'	=>	$this->pluginDirUrl . 'api.php',
+			'oauth_proxy_url'=>	$this->pluginDirUrl . 'oauth-proxy.php',
 		);
-		$optionsMap = array(
-			'home'		=>	'url',
-			'siteurl'	=>	'siteurl',
-			'admin_email'=>	'admin_email',
-			'timezone_string'=>'timezone',
-			'use_smilies'=>	'use_smilies',
-		);
-		foreach($optionsMap as $key => $value)
-			$options[$value] = get_option($key);
 		
 		$akismet_api_key = get_option('wordpress_api_key');
 		if ($akismet_api_key)
 			$options['akismet_api_key'] = $akismet_api_key;
-		$options['local_api_url'] = $this->pluginDirUrl . 'api.php';
 		
 		return $options;
 	}
@@ -525,8 +506,12 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		try{
 			$response = $this->getClient($user->ID)->request('POST', 'sites/settings', $params);
 			
-			if ($response['code'] != 0)
+			if (is_string($response)){
+				$this->errorMessages[] = $response;
+			}
+			elseif(isset($response['code']) && $response['code'] != 0){
 				$this->errorMessages[] = $response['errorMessage'];
+			}
 		}
 		catch(Duoshuo_Exception $e){
 			update_option('duoshuo_connect_failed', time());
@@ -545,7 +530,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			return ;
 		
 		//	WP_User
-		$user = get_userdata($userId);
+		$userData = get_userdata($userId);
 		
 		try{
 			$this->exportUsers(array($userData));
@@ -561,7 +546,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	 */
 	public function syncPostToRemote($postId, $post = null){
 		if (!$this->connected())
-			return ;
+			return;
 		
 		if ($post == null)
 			$post = get_post($postId);
@@ -581,7 +566,9 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		try{
 			$response = $this->getClient($post->post_author)->request('POST', 'threads/sync', $params);
 			
-			if ($response['code'] == 0 && isset($response['response']))
+			unset($_POST['sync_to']); //避免某些插件多次触发save_post
+			
+			if (isset($response['code']) && $response['code'] == 0 && isset($response['response']))
 				update_post_meta($post->ID, 'duoshuo_thread_id', $response['response']['thread_id']);
 		}
 		catch(Duoshuo_Exception $e){
@@ -590,15 +577,6 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	}
 	
 	public function packageUser($user){
-		$data = array(
-				'user_key'	=>	$userData->ID,
-				'name'		=>	$userData->display_name,
-				'email'		=>	$userData->user_email,
-				'url'		=>	$userData->user_url,
-				'created_at'=>	$userData->user_registered,
-				'meta'		=>	json_encode($row),
-		);
-	
 		static $roleMap = array(
 				'administrator'	=>	'administrator',
 				'editor'		=>	'editor',
@@ -606,7 +584,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 				'contributor'	=>	'user',
 				'subscriber'	=>	'user',
 		);
-	
+		
 		if ($user instanceof WP_User){	//	wordpress 3.3
 			$userData = $user->data;
 			unset($userData->user_pass);
@@ -619,7 +597,16 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			unset($userData->user_login);
 			$capabilities = $this->getUserMeta($user->ID, $this->get_blog_prefix().'capabilities', true);
 		}
-	
+		
+		$data = array(
+				'user_key'	=>	$userData->ID,
+				'name'		=>	$userData->display_name,
+				'email'		=>	$userData->user_email,
+				'url'		=>	$userData->user_url,
+				'created_at'=>	$userData->user_registered,
+				'meta'		=>	json_encode($row),
+		);
+		
 		foreach($roleMap as $wpRole => $role)
 			if (isset($capabilities[$wpRole]) && $capabilities[$wpRole]){
 			$data['role'] = $role;
@@ -929,11 +916,6 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function syncOptions(){
 		global $post;
 		
-		if (!$this->connected()){
-			echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
-			return;
-		}
-		
 		switch($post->post_status){
 			case 'auto-draft':
 			case 'inherit':
@@ -944,22 +926,71 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 				break;
 			default:
 		}
-		$user = wp_get_current_user();
-		$params = array(
-			'template'	=>	'wordpress',
-		);
 		
+		$query = array(
+			'callback'	=>	'getSyncOptionsCallback',
+			//'require'	=>	'site,visitor,serverTime',
+			'remote_auth'=>	$this->remoteAuth($this->userData()),
+		);
 		$threadId = get_post_meta($post->ID, 'duoshuo_thread_id', true);
 		if ($threadId)
 			$params['thread_id'] = $threadId;
-		
-		try{
-			echo $this->getHtml('partials/sync-options', $params);
-			echo '<p><a href="' . admin_url('admin.php?page=duoshuo-profile') . '">绑定更多社交网站</a></p>';
-		}
-		catch(Duoshuo_Exception $e){
-			echo '<p>暂时无法连接到多说服务器，请检查你的DNS设置并稍后重试。</p>';
-		}
+
+		$jsonpUrl = 'http://' . $this->shortName . '.duoshuo.com/api/users/syncOptions.jsonp?' . http_build_query($query);
+		?>
+<script>
+function getSyncOptionsCallback(rsp){
+	var serviceNames = {
+			'weibo'		:	'新浪微博',
+			'qq'		:	'QQ',
+			'qzone'		:	'QQ空间',
+			'qqt'		:	'腾讯微博',
+			'renren'	:	'人人网',
+			'douban'	:	'豆瓣网',
+			'msn'		:	'MSN',
+			'netease'	:	'网易微博',
+			'kaixin'	:	'开心网',
+			'sohu'		:	'搜狐微博',
+			'baidu'		:	'百度',
+			'taobao'	:	'淘宝网',
+	        'google'    :	'谷歌'
+		},
+		html = '';
+	
+	if (!rsp.response){
+		html += '<p>你还没有绑定社交帐号，绑定后即可同时发布微博</p>';
+	}
+	else{
+		html += '<input type="hidden" name="sync_to[]" value="placeholder" />\
+			<ul class="ds-connected-sites">';
+		jQuery.each(rsp.response, function(key, info){
+			var service = key.split('_')[1];
+			html += '\
+			<li><label>\
+				<input type="checkbox" name="sync_to[]" value="' + key + '"' + (info.checked ? ' checked="checked"' : '') + (info.expired ? ' disabled="disabled" style="visibility:hidden;"' : '') + '/>\
+				<span class="service-icon icon-' + service + '"></span>'
+				+ serviceNames[service]
+				+ (info.avatar_url ? '<img src="' + info.avatar_url + '" alt="' + info.name + '" style="width:16px;height:16px;" />' : '')
+				+ info.name
+				+ (info.expired ? '(<a href="http://duoshuo.com/settings/accounts/" target="_blank">已过期，请更新授权</a>)' : '')
+				+ '</label>\
+			</li>';
+		});
+		html += '<li><label><input type="checkbox" onchange="var c = this.checked;jQuery(\'.ds-connected-sites :checkbox\').each(function(){this.checked = c});" /> 全选</label></li>\
+		</ul>\
+		<p>温馨提示：系统会优先采用文章摘要来发布微博</p>';
+	}
+	html += '<p><a href="<?php echo admin_url('admin.php?page=duoshuo-profile');?>">绑定更多社交网站</a></p>';
+	jQuery('#duoshuo-sidebox .inside').html(html);
+}
+(function() {
+	var ds = document.createElement('script'); ds.type = 'text/javascript'; ds.async = true;
+	ds.charset = 'UTF-8';
+	ds.src = '<?php echo $jsonpUrl;?>';
+	(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+		<?php 
 	}
 	
 	public function managePostComments($post){
@@ -1040,6 +1071,8 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	}
 	
 	public function updateLocalOptions(){
+		if (isset($_POST['duoshuo_api_hostname']))
+			update_option('duoshuo_api_hostname', $_POST['duoshuo_api_hostname']);
 		update_option('duoshuo_debug', isset($_POST['duoshuo_debug']) ? 1 : 0);
 		update_option('duoshuo_cron_sync_enabled', isset($_POST['duoshuo_cron_sync_enabled']) ? 1 : 0);
 		update_option('duoshuo_seo_enabled', isset($_POST['duoshuo_seo_enabled']) ? 1 : 0);

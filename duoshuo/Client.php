@@ -127,7 +127,7 @@ class Duoshuo_Client{
 			throw new Duoshuo_Exception("wrong auth type");
 		}
 
-		$accessTokenUrl = 'http://api.duoshuo.com/oauth2/access_token';
+		$accessTokenUrl = $this->end_point . 'oauth2/access_token';
 		$response = $this->httpRequest($accessTokenUrl, 'POST', $params);
 		
 		$token = $response;

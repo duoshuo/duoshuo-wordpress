@@ -4,7 +4,7 @@ Plugin Name: 多说
 Plugin URI: http://wordpress.org/extend/plugins/duoshuo/
 Description: 追求最佳用户体验的社会化评论框，为中小网站提供“新浪微博、QQ、人人、豆瓣等多帐号登录并评论”功能。“多说”帮你搭建更活跃，互动性更强的评论平台，功能强大且永久免费。
 Author: 多说网
-Version: 0.8
+Version: 0.9
 Author URI: http://duoshuo.com/
 */
 
@@ -186,7 +186,7 @@ function duoshuo_common_initialize(){
 
 // Register widgets.
 function duoshuo_register_widgets(){
-	include dirname(__FILE__) . '/widgets.php';
+	require_once dirname(__FILE__) . '/widgets.php';
 	
 	register_widget('Duoshuo_Widget_Recent_Visitors');
 	//register_widget('Duoshuo_Widget_Top_Commenters');
@@ -200,69 +200,81 @@ function duoshuo_register_widgets(){
 function duoshuo_add_pages() {
 	global $duoshuoPlugin;
 	
-	if (empty($duoshuoPlugin->shortName) || empty($duoshuoPlugin->secret)){
+	if (empty($duoshuoPlugin->shortName) || empty($duoshuoPlugin->secret)){	//	尚未安装
 		add_object_page(
 			'安装',
 			'多说评论',
-			'moderate_comments',
+			'moderate_comments',	//	权限
 			'duoshuo',
 			array($duoshuoPlugin, 'config'),
 			$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png' 
 		);
 	}
-	elseif(get_option('duoshuo_synchronized') === false){
-		add_object_page(
-			'数据同步',
-			'多说评论',
-			'moderate_comments',
-			'duoshuo',
-			array($duoshuoPlugin, 'sync'),
-			$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png'
-		);
-	}
-	elseif (current_user_can('moderate_comments')){
-		add_object_page(
-			'多说评论管理',
-			'多说评论',
-			'moderate_comments',
-			'duoshuo',
-			array($duoshuoPlugin,'manage'),
-			$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png' 
-		);
-		add_submenu_page(
-	         'duoshuo',//$parent_slug
-	         '个性化设置',//page_title
-	         '个性化设置',//menu_title
-	         'manage_options',//权限
-	         'duoshuo-preferences',//menu_slug
-	         array($duoshuoPlugin, 'preferences')//function
-	    );
-		add_submenu_page(
-	         'duoshuo',//$parent_slug
-	         '高级选项',//page_title
-	         '高级选项',//menu_title
-	         'manage_options',//权限
-	         'duoshuo-settings',//menu_slug
-	         array($duoshuoPlugin, 'settings')//function
-	    );
-	    add_submenu_page(
-	         'duoshuo',//$parent_slug
-	         '我的多说帐号',//page_title
-	         '我的多说帐号',//menu_title
-	         'level_0',//权限
-	         'duoshuo-profile',//menu_slug
-	         array($duoshuoPlugin, 'profile')//function
-	    );
-	}
-	elseif(current_user_can('level_0')){
-        add_submenu_page(
-	         'profile.php',//$parent_slug
-	         '我的多说帐号',//page_title
-	         '我的多说帐号',//menu_title
-	         'level_0',//权限
-	         'duoshuo-profile',//menu_slug
-	         array($duoshuoPlugin, 'profile')//function
-	    );
+	else{	// 已经安装成功
+		if (current_user_can('moderate_comments')){
+			if(get_option('duoshuo_synchronized') === false){
+				add_object_page(
+					'数据同步',
+					'多说评论',
+					'moderate_comments',
+					'duoshuo',
+					array($duoshuoPlugin, 'sync'),
+					$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png'
+				);
+				add_submenu_page(
+					'duoshuo',
+					'多说评论管理',
+					'多说评论',
+					'moderate_comments',
+					'duoshuo-manage',
+					array($duoshuoPlugin,'manage')
+				);
+			}
+			else{
+				add_object_page(
+					'多说评论管理',
+					'多说评论',
+					'moderate_comments',
+					'duoshuo',
+					array($duoshuoPlugin,'manage'),
+					$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png' 
+				);
+			}
+			add_submenu_page(
+		         'duoshuo',//$parent_slug
+		         '个性化设置',//page_title
+		         '个性化设置',//menu_title
+		         'manage_options',//权限
+		         'duoshuo-preferences',//menu_slug
+		         array($duoshuoPlugin, 'preferences')//function
+		    );
+			add_submenu_page(
+		         'duoshuo',//$parent_slug
+		         '高级选项',//page_title
+		         '高级选项',//menu_title
+		         'manage_options',//权限
+		         'duoshuo-settings',//menu_slug
+		         array($duoshuoPlugin, 'settings')//function
+		    );
+		    add_submenu_page(
+		         'duoshuo',//$parent_slug
+		         '我的多说帐号',//page_title
+		         '我的多说帐号',//menu_title
+		         'level_0',//权限
+		         'duoshuo-profile',//menu_slug
+		         array($duoshuoPlugin, 'profile')//function
+		    );
+		}
+		elseif(current_user_can('level_0')){
+			add_submenu_page(
+			'profile.php',//$parent_slug
+			'我的多说帐号',//page_title
+			'我的多说帐号',//menu_title
+			'level_0',//权限
+			'duoshuo-profile',//menu_slug
+			array($duoshuoPlugin, 'profile')//function
+			);
+		}
 	}
 }
 
@@ -276,6 +288,7 @@ function duoshuo_register_settings(){
 	register_setting('duoshuo', 'duoshuo_short_name');
 	register_setting('duoshuo', 'duoshuo_secret');
 	
+	register_setting('duoshuo', 'duoshuo_api_hostname');
 	register_setting('duoshuo', 'duoshuo_cron_sync_enabled');
 	register_setting('duoshuo', 'duoshuo_seo_enabled');
 	register_setting('duoshuo', 'duoshuo_cc_fix');

@@ -9,6 +9,16 @@
 	<table class="form-table">
 		<tbody>
 		<tr valign="top">
+			<th scope="row">多说API服务器主机</th>
+			<td><?php $duoshuo_api_hostname = get_option('duoshuo_api_hostname');?>
+				<ul>
+					<li><label><input type="radio" name="duoshuo_api_hostname" value="api.duoshuo.com" <?php if ($duoshuo_api_hostname === 'api.duoshuo.com') echo ' checked="checked"';?>/>api.duoshuo.com</label> <span class="description">(如果你的博客服务器在国内，推荐)</span></li>
+					<li><label><input type="radio" name="duoshuo_api_hostname" value="api.duoshuo.org" <?php if ($duoshuo_api_hostname === 'api.duoshuo.org') echo ' checked="checked"';?>/>api.duoshuo.org</label> <span class="description">(如果你的博客服务器在国外，推荐)</span></li>
+					<li><label><input type="radio" name="duoshuo_api_hostname" value="118.144.80.201" <?php if ($duoshuo_api_hostname === '118.144.80.201') echo ' checked="checked"';?>/>118.144.80.201</label> <span class="description">(除非你的博客服务器DNS出现故障，否则不推荐)</span></li>
+				</ul>
+			</td>
+		</tr>
+		<tr valign="top">
 			<th scope="row">本地数据备份</th>
 			<td><label><input type="checkbox" name="duoshuo_cron_sync_enabled" value="1" <?php if (get_option('duoshuo_cron_sync_enabled')) echo ' checked="checked"';?>/>定时从多说备份评论到本地</label></td>
 		</tr>
@@ -49,6 +59,7 @@
 </div>
 <div id="ds-sync">
 	<p class="message-start"><a href="javascript:void(0)" class="button" onclick="fireSyncLog();return false;">备份多说中的评论到本地数据库</a></p>
+	<p class="status"></p>
 </div>
 <?php include_once dirname(__FILE__) . '/common-script.html';?>
 
@@ -61,7 +72,7 @@
 </div>
 
 <h3>意见反馈</h3>
-<p>你的意见是多说成长的原动力，<a href="http://dev.duoshuo.com/discussion">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
+<p>你的意见是多说成长的原动力，<a href="http://dev.duoshuo.com/discussion" target="_blank">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
 <p>
 	<iframe width="120" height="23" frameborder="0" allowtransparency="true" marginwidth="0" marginheight="0" scrolling="no" frameborder="No" border="0" src="http://widget.weibo.com/relationship/followbutton.php?language=zh_cn&width=120&height=24&uid=2468548203&style=2&btn=red&dpc=1"></iframe>
 	<iframe id="previewmc" src="http://follow.v.t.qq.com/index.php?c=follow&a=quick&name=duo-shuo&style=3&t=1327999237149&f=1" allowtransparency="true" style="margin:0 auto;" frameborder="0" height="23" scrolling="no" width="100"></iframe>
