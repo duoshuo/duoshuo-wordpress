@@ -932,9 +932,9 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			//'require'	=>	'site,visitor,serverTime',
 			'remote_auth'=>	$this->remoteAuth($this->userData()),
 		);
-		$threadId = get_post_meta($post->ID, 'duoshuo_thread_id', true);
-		if ($threadId)
-			$params['thread_id'] = $threadId;
+
+		if ($post->ID)
+			$params['thread_key'] = $post->ID;
 
 		$jsonpUrl = 'http://' . $this->shortName . '.duoshuo.com/api/users/syncOptions.jsonp?' . http_build_query($query);
 		?>
