@@ -934,7 +934,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		);
 
 		if ($post->ID)
-			$params['thread_key'] = $post->ID;
+			$query['thread_key'] = $post->ID;
 
 		$jsonpUrl = 'http://' . $this->shortName . '.duoshuo.com/api/users/syncOptions.jsonp?' . http_build_query($query);
 		?>
