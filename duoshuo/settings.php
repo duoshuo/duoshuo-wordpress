@@ -9,7 +9,15 @@
 	<table class="form-table">
 		<tbody>
 		<tr valign="top">
-			<th scope="row">多说API服务器主机</th>
+			<th scope="row">多说域名</th>
+			<td><strong><?php echo get_option('duoshuo_short_name');?></strong>.duoshuo.com</td>
+		</tr>
+		<tr valign="top">
+			<th scope="row">密钥</th>
+			<td><?php echo get_option('duoshuo_secret');?></td>
+		</tr>
+		<tr valign="top">
+			<th scope="row">多说API服务器</th>
 			<td><?php $duoshuo_api_hostname = get_option('duoshuo_api_hostname');?>
 				<ul>
 					<li><label><input type="radio" name="duoshuo_api_hostname" value="api.duoshuo.com" <?php if ($duoshuo_api_hostname === 'api.duoshuo.com') echo ' checked="checked"';?>/>api.duoshuo.com</label> <span class="description">(如果你的博客服务器在国内，推荐)</span></li>

@@ -64,18 +64,15 @@ class Duoshuo_Abstract {
 		$affectedThreads = array();
 		
 		//do{
-			try{
-				$params['since_id'] = $last_log_id;
-				$response = $client->request('GET', 'log/list', $params);
-			}
-			catch(Duoshuo_Exception $e){
-				$this->updateOption('connect_failed', time());
-				$this->updateOption('sync_lock',  0);
-				return;
-			}
 			
-			if (is_string($response) || !isset($response['response']))
-				return;
+			$params['since_id'] = $last_log_id;
+			$response = $client->request('GET', 'log/list', $params);
+			
+			if (is_string($response))
+				throw new Duoshuo_Exception($response, Duoshuo_Exception::INTERNAL_SERVER_ERROR);
+			
+			if (!isset($response['response']))
+				throw new Duoshuo_Exception($response['message'], $response['code']);
 			
 			foreach($response['response'] as $log){
 				switch($log['action']){

@@ -268,7 +268,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    	$this->syncUserToRemote($topPost->post_author);
 	    	$this->syncPostToRemote($topPost->ID, $topPost);
 		    try{
-		    	$comments = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->comments where comment_post_ID = %d AND comment_agent NOT LIKE '%|Duoshuo/%%' order by comment_ID asc", $topPost->ID));
+		    	$comments = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->comments where comment_post_ID = %d AND comment_agent NOT LIKE '%%Duoshuo/%%' order by comment_ID asc", $topPost->ID));
 		    	$this->exportComments($comments);
 		    }
 		    catch(Duoshuo_Exception $e){
@@ -440,7 +440,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 					break;
 				case 'comment':
 					$limit = 50;
-					$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE '%|Duoshuo/%%' order by comment_ID asc limit $offset,$limit"));
+					$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE '%%Duoshuo/%%' order by comment_ID asc limit $offset,$limit"));
 					$count = $this->exportComments($comments);
 					break;
 				default:
@@ -1010,6 +1010,11 @@ function getSyncOptionsCallback(rsp){
 			$this->sendJsonResponse($response);
 		}
 		catch(Duoshuo_Exception $e){
+			if ($e->getCode() == Duoshuo_Exception::REQUEST_TIMED_OUT){
+				$this->updateOption('connect_failed', time());
+				$this->updateOption('sync_lock',  0);
+			}
+			
 			$this->sendException($e);
 		}
 	}
