@@ -305,7 +305,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	        $avatar_tag = get_avatar($current_user->ID);
 	        $avatar_data = array();
 	        preg_match('/(src)=((\'|")[^(\'|")]*(\'|"))/i', $avatar_tag, $avatar_data);
-	        $avatar = str_replace(array('"', "'"), '', $avatar_data[2]);
+	        $avatar = htmlspecialchars_decode(str_replace(array('"', "'"), '', $avatar_data[2]), ENT_QUOTES);
 	        
 	        return array(
 	            'id' => $current_user->ID,
