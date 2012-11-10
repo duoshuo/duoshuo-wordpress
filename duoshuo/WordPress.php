@@ -827,10 +827,14 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function deleteForeverPost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
-		foreach ($results as $result)
-	        wp_delete_comment($result->comment_ID, true);
+		if (count($commentIdArray)){
+			$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->comments WHERE comment_ID IN ('" . implode("', '", $commentIdArray) . "')");
+		
+			foreach ($commentIdArray as $commentId)
+		        wp_delete_comment($commentId, true);
+	    }
 	    
 	    return array();
 	}
@@ -838,10 +842,14 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function deletePost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
-		foreach ($results as $result)
-	        wp_trash_comment($result->comment_ID);
+		if (count($commentIdArray)){
+			$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->comments WHERE comment_ID IN ('" . implode("', '", $commentIdArray) . "')");
+		
+			foreach ($commentIdArray as $commentId)
+		        wp_trash_comment($commentId);
+	    }
 	    
 	    return array();
 	}
@@ -849,10 +857,14 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function spamPost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
-		foreach($results as $result)
-			wp_spam_comment($result->comment_ID);
+		if (count($commentIdArray)){
+			$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->comments WHERE comment_ID IN ('" . implode("', '", $commentIdArray) . "')");
+		
+			foreach($commentIdArray as $commentId)
+				wp_spam_comment($commentId);
+		}
 		
 		return array();
 	}
@@ -860,10 +872,14 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function approvePost($postIdArray){
 		global $wpdb;
 		
-		$results = $wpdb->get_results( "SELECT comment_ID, meta_value FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
+		$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->commentmeta WHERE meta_key = 'duoshuo_post_id' AND meta_value IN ('" . implode("', '", $postIdArray) . "')");
 		
-		foreach ($results as $result)
-			wp_set_comment_status($result->comment_ID, 'approve');
+		if (count($commentIdArray)){
+			$commentIdArray = $wpdb->get_col( "SELECT comment_ID FROM $wpdb->comments WHERE comment_ID IN ('" . implode("', '", $commentIdArray) . "')");
+		
+			foreach ($commentIdArray as $commentId)
+				wp_set_comment_status($commentId, 'approve');
+		}
 		
 		return array();
 	}
