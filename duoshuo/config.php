@@ -12,16 +12,5 @@ $params = $this->packageOptions() + array(
 if ($this->shortName)
 	$params['short_name'] = $this->shortName;
 ?>
-<iframe id="duoshuo-remote-window" src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" width="100%" height="600"></iframe>
-<script>
-jQuery(function(){
-var $ = jQuery,
-	iframe = $('#duoshuo-remote-window'),
-	resetIframeHeight = function(){
-		iframe.height($(window).height() - iframe.offset().top - 70);
-	};
-resetIframeHeight();
-$(window).resize(resetIframeHeight);
-});
-</script>
+<iframe id="duoshuo-remote-window" src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" style="width:100%;height:580px;"></iframe>
 </div>

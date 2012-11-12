@@ -151,7 +151,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function originalCommentsNotice(){
 		echo '<div class="updated">'
 			. '<p>多说正在努力地为您的网站提供强大的社会化评论服务，WordPress原生评论数据现在仅用于备份；</p>'
-			. '<p>多说会将每一条评论实时写回本地数据库，您在多说删除/修改了评论，也同样会同步到本地数据；</p>'
+			. '<p>多说会将每一条评论实时写回本地数据库，您在多说删除/审核了评论，也同样会同步到本地数据；</p>'
 			. '<p>您在本页做的任何管理评论操作，都不会对多说评论框上的评论起作用，请访问<a href="http://' . $this->shortName . '.' . self::DOMAIN . '/admin/" target="_blank">评论管理后台</a>进行评论管理。</p>'
 			. '</div>';
 	}
