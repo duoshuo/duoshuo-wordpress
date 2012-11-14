@@ -379,11 +379,11 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 	public function outputFooterCommentJs() {
 		if (!did_action('wp_head'))
 			$this->printScripts();
-?>
-<script type="text/javascript">
-	DUOSHUO.RecentCommentsWidget('.widget_recent_comments #recentcomments', {template : 'wordpress'});
-</script>
-	<?php
+		/** 不再替换原生最新评论widget
+		<script type="text/javascript">
+			DUOSHUO.RecentCommentsWidget('.widget_recent_comments #recentcomments', {template : 'wordpress'});
+		</script>
+		 */
 	}
 	
 	public function loginForm(){
