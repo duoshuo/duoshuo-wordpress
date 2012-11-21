@@ -179,7 +179,7 @@ class Duoshuo_Abstract {
 		 
 		$remoteResponse = $this->getClient()->request('POST', 'users/import', $params);
 		
-		if (isset($remoteResponse['response'])){
+		if (is_array($remoteResponse) && isset($remoteResponse['response'])){
 			foreach($remoteResponse['response'] as $userId => $duoshuoUserId)
 				$this->updateUserMeta($userId, 'duoshuo_user_id', $duoshuoUserId);
 		}
@@ -200,7 +200,7 @@ class Duoshuo_Abstract {
 	
 		$remoteResponse = $this->getClient()->request('POST','threads/import', $params);
 		
-		if (isset($remoteResponse['response'])){
+		if (is_array($remoteResponse) && isset($remoteResponse['response'])){
 			foreach($remoteResponse['response'] as $threadId => $duoshuoThreadId)
 				$this->updateThreadMeta($threadId, 'duoshuo_thread_id', $duoshuoThreadId);
 		}

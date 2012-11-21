@@ -568,7 +568,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			
 			unset($_POST['sync_to']); //避免某些插件多次触发save_post
 			
-			if (isset($response['code']) && $response['code'] == 0 && isset($response['response']))
+			if (is_array($remoteResponse) && isset($response['code']) && $response['code'] == 0 && isset($response['response']))
 				update_post_meta($post->ID, 'duoshuo_thread_id', $response['response']['thread_id']);
 		}
 		catch(Duoshuo_Exception $e){
