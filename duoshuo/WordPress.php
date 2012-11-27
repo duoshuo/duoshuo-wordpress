@@ -381,7 +381,7 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 			$this->printScripts();
 		/** 不再替换原生最新评论widget
 		<script type="text/javascript">
-			DUOSHUO.RecentCommentsWidget('.widget_recent_comments #recentcomments', {template : 'wordpress'});
+			DUOSHUO.RecentComments('.widget_recent_comments #recentcomments', {template : 'wordpress'});
 		</script>
 		 */
 	}
@@ -568,7 +568,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			
 			unset($_POST['sync_to']); //避免某些插件多次触发save_post
 			
-			if (is_array($remoteResponse) && isset($response['code']) && $response['code'] == 0 && isset($response['response']))
+			if (is_array($response) && isset($response['code']) && $response['code'] == 0 && isset($response['response']))
 				update_post_meta($post->ID, 'duoshuo_thread_id', $response['response']['thread_id']);
 		}
 		catch(Duoshuo_Exception $e){
@@ -604,7 +604,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 				'email'		=>	$userData->user_email,
 				'url'		=>	$userData->user_url,
 				'created_at'=>	$userData->user_registered,
-				'meta'		=>	json_encode($row),
+				'meta'		=>	json_encode($userData),
 		);
 		
 		foreach($roleMap as $wpRole => $role)
@@ -639,8 +639,8 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			'title'		=>	html_entity_decode($post->post_title, ENT_QUOTES, 'UTF-8'),
 			'content'	=>	$post->post_content,
 			'excerpt'	=>	$post->post_excerpt,
-			'created_at'=>	mysql2date('Y-m-d\TH:i:sP', $post->post_date_gmt),
-			'updated_at'=>	mysql2date('Y-m-d\TH:i:sP', $post->post_modified_gmt),
+			'created_at'=>	mysql2date('Y-m-d\TH:i:s+00:00', $post->post_date_gmt),
+			'updated_at'=>	mysql2date('Y-m-d\TH:i:s+00:00', $post->post_modified_gmt),
 			'ip'		=>	$_SERVER['REMOTE_ADDR'],
 			'url'		=>	get_permalink($post),
 			'slug'		=>	$post->post_name,

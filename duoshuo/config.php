@@ -6,6 +6,7 @@ $params = $this->packageOptions() + array(
 	'system'	=>	'wordpress',
 	'callback'	=>	admin_url('admin.php?page=duoshuo'),
 	'user_key'	=>	$user->ID,
+	'user_name'	=>	$user->display_name,
 	'sync_log'	=>	1,
 );
 

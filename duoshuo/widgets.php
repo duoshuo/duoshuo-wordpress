@@ -63,7 +63,7 @@ class Duoshuo_Widget_Recent_Comments extends WP_Widget {
 		echo $output;?>
 <script>
 if (typeof DUOSHUO !== 'undefined')
-	DUOSHUO.RecentCommentsWidget && DUOSHUO.RecentCommentsWidget('.ds-recent-comments');
+	DUOSHUO.RecentComments && DUOSHUO.RecentComments('.ds-recent-comments');
 </script><?php 
 	}
 
