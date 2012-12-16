@@ -429,18 +429,18 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 					$limit = 30;
 					// 不包括user_login, user_pass
 					$columns = array('ID', 'user_nicename', 'user_email', 'user_url', 'user_registered', 'display_name');
-					$users = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->users order by ID asc limit $offset,$limit"));
+					$users = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->users order by ID asc limit %d,%d", $offset, $limit));
 					$count = $this->exportUsers($users);
 					break;
 				case 'post':
 					$limit = 10;
 					$columns = array('ID', 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_title', 'post_excerpt', 'post_status', 'comment_status', 'ping_status', 'post_name', 'post_modified_gmt', 'guid', 'post_type', 'post_parent');
-					$posts = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->posts where post_type not in ('attachment', 'nav_menu_item', 'revision') and post_status not in ('auto-draft', 'draft', 'trash', 'inherit') order by ID asc limit $offset,$limit") );// 'inherit' 不再进行同步
+					$posts = $wpdb->get_results( $wpdb->prepare("SELECT " . implode(',', $columns) . "  FROM $wpdb->posts where post_type not in ('attachment', 'nav_menu_item', 'revision') and post_status not in ('auto-draft', 'draft', 'trash', 'inherit') order by ID asc limit %d,%d", $offset, $limit) );// 'inherit' 不再进行同步
 					$count = $this->exportPosts($posts);
 					break;
 				case 'comment':
 					$limit = 50;
-					$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE '%%Duoshuo/%%' order by comment_ID asc limit $offset,$limit"));
+					$comments = $wpdb->get_results( $wpdb->prepare("SELECT * FROM $wpdb->comments where comment_agent NOT LIKE '%%Duoshuo/%%' order by comment_ID asc limit %d,%d", $offset, $limit));
 					$count = $this->exportComments($comments);
 					break;
 				default:
