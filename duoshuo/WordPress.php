@@ -337,19 +337,28 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		static $once = 0;
 		if ($once ++)
 			return;
-?>
-<script type="text/javascript">
-var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
-duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
-duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
-</script>
-<?php 
+
+		// only load js on single and pages
+		if(is_single() || is_page()) { ?>
+
+		<script type="text/javascript">
+			var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
+			duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
+			duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
+		</script>
+
+		
+
+    <?php
 		$duoshuo_shortname = 'static';
 		$url = 'http://' . $duoshuo_shortname . '.' . self::DOMAIN . '/embed.js';
 		//?pname=wordpress&pver=' . self::VERSION
-		wp_register_script('duoshuo-embed', $url, array(), null);
+
+		//load embed.js before </body>
+		wp_register_script('duoshuo-embed', $url, array(), null,true);
 		
-		wp_enqueue_script('duoshuo-embed');
+	 	wp_enqueue_script('duoshuo-embed');
+	 }
 	}
 	
 	/**
@@ -361,18 +370,24 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 		if ($scriptsPrinted)
 			return;
 		
-		$duoshuo_shortname = 'static';?>
-<script type="text/javascript">
-var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
-duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
-duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
-(function() {
-    var ds = document.createElement('script'); ds.type = 'text/javascript'; ds.async = true;
-    ds.charset = 'UTF-8';
-    ds.src = 'http://<?php echo $duoshuo_shortname;?>.duoshuo.com/embed.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
-})();
-</script><?php
+		$duoshuo_shortname = 'static';
+		if(is_single() || is_page()){
+
+		?>
+			<script type="text/javascript">
+			var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
+			duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
+			duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
+			(function() {
+			    var ds = document.createElement('script'); ds.type = 'text/javascript'; ds.async = true;
+			    ds.charset = 'UTF-8';
+			    ds.src = 'http://<?php echo $duoshuo_shortname;?>.duoshuo.com/embed.js';
+			    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+			})();
+			</script>
+
+	<?php
+		} //end if(is_single() || is_page())
 		$scriptsPrinted = true;
 	}
 	
