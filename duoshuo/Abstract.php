@@ -2,7 +2,7 @@
 class Duoshuo_Abstract {
 	const DOMAIN = 'duoshuo.com';
 	const STATIC_DOMAIN = 'static.duoshuo.com';
-	const VERSION = '0.9';
+	const VERSION = '1.0';
 	
 	/**
 	 * 
@@ -117,12 +117,6 @@ class Duoshuo_Abstract {
 		return count($response['response']);
 	}
 	
-	public function remoteAuth($user_data){
-		$message = base64_encode(json_encode($user_data));
-	    $time = time();
-	    return $message . ' ' . self::hmacsha1($message . ' ' . $time, $this->secret) . ' ' . $time;
-	}
-	
 	function rfc3339_to_mysql($string){
 		if (method_exists('DateTime', 'createFromFormat')){	//	php 5.3.0
 			return DateTime::createFromFormat(DateTime::RFC3339, $string)->format('Y-m-d H:i:s');
@@ -143,30 +137,53 @@ class Duoshuo_Abstract {
 		}
 	}
 	
-	// from: http://www.php.net/manual/en/function.sha1.php#39492
-	// Calculate HMAC-SHA1 according to RFC2104
-	// http://www.ietf.org/rfc/rfc2104.txt
-	static function hmacsha1($data, $key) {
+	static function encodeJWT($payload, $key){
+		$header = array('typ' => 'JWT', 'alg' => 'HS256');
+	
+		$segments = array(
+			str_replace('=', '', strtr(base64_encode(json_encode($header)), '+/', '-_')),
+			str_replace('=', '', strtr(base64_encode(json_encode($payload)), '+/', '-_')),
+		);
+		$signing_input = implode('.', $segments);
+	
+		$signature = self::hmacsha256($signing_input, $key);
+	
+		$segments[] = str_replace('=', '', strtr(base64_encode($signature), '+/', '-_'));
+	
+		return implode('.', $segments);
+	}
+	
+	/**
+	 * from: http://www.php.net/manual/en/function.sha1.php#39492
+	 * Calculate HMAC-SHA1 according to RFC2104
+	 * http://www.ietf.org/rfc/rfc2104.txt
+	 * Used in OAuth1 and remoteAuth
+	 * @deprecated
+	 */
+	static function hmacsha256($data, $key) {
 		if (function_exists('hash_hmac'))
-			return hash_hmac('sha1', $data, $key);
+			return hash_hmac('sha256', $data, $key, true);
+		
+		if (!class_exists('nanoSha2'))
+			require 'nanoSha2.php';
+		
+		$nanoSha2 = new nanoSha2((defined('_NANO_SHA2_UPPER')) ? true : false);
 		
 	    $blocksize=64;
-	    $hashfunc='sha1';
 	    if (strlen($key)>$blocksize)
-	        $key=pack('H*', $hashfunc($key));
+	        $key=pack('H*', $nanoSha2->hash($key, true));
 	    $key=str_pad($key,$blocksize,chr(0x00));
 	    $ipad=str_repeat(chr(0x36),$blocksize);
 	    $opad=str_repeat(chr(0x5c),$blocksize);
 	    $hmac = pack(
-	                'H*',$hashfunc(
+	                'H*',$nanoSha2->hash(
 	                    ($key^$opad).pack(
-	                        'H*',$hashfunc(
-	                            ($key^$ipad).$data
-	                        )
-	                    )
+	                        'H*', $nanoSha2(($key^$ipad).$data, true)
+	                    ),
+	                	true
 	                )
 	            );
-	    return bin2hex($hmac);
+	    return $hmac;
 	}
 	
 	function exportUsers($users){

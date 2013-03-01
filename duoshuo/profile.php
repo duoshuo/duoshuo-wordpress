@@ -1,7 +1,6 @@
 <?php
 $params = array(
-	'short_name'	=>	$this->shortName,
-	'remote_auth'	=>	$this->remoteAuth($this->userData()),
+	'jwt'	=>	$this->jwt(),
 );
 $settingsUrl = 'http://' . self::DOMAIN.'/settings/?' . http_build_query($params);
 ?>

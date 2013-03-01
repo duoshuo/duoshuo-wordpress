@@ -1,7 +1,7 @@
 <?php
 class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
-	const VERSION = '0.9';
+	const VERSION = '1.0';
 	
 	protected static $_instance = null;
 	
@@ -115,6 +115,14 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			: true;
 	}
 	
+	public function setJwtCookie($auth_cookie, $expire, $expiration, $user_id, $scheme){
+		$jwt = $this->jwt($user_id);
+		$secure = $scheme == 'secure_auth';
+		
+		setcookie('duoshuo_token', $jwt, $expire, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN, $secure, true);
+		setcookie('duoshuo_token', $jwt, $expire, ADMIN_COOKIE_PATH, COOKIE_DOMAIN, $secure, true);
+	}
+	
 	public function userLogin($token){
 		global $wpdb, $error;
 		
@@ -161,16 +169,14 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	 * @return Duoshuo_Client
 	 */
 	public function getClient($userId = 0){	//如果不输入参数，就是游客
-		$remoteAuth = $this->remoteAuth($this->userData($userId));
-		
 		if ($userId !== null){
 			$accessToken = $this->getUserMeta($userId, 'duoshuo_access_token');
 			
 			if (is_string($accessToken))
-				$client = new Duoshuo_Client($this->shortName, $this->secret, $remoteAuth, $accessToken);
+				$client = new Duoshuo_Client($this->shortName, $this->secret, $this->jwt($userId), $accessToken);
 		}
 		if (!isset($client))
-			$client = new Duoshuo_Client($this->shortName, $this->secret, $remoteAuth);
+			$client = new Duoshuo_Client($this->shortName, $this->secret, $this->jwt($userId));
 		
 		$apiHostname = $this->getOption('api_hostname');
 		if ($apiHostname)
@@ -295,6 +301,30 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		    return "<span $attribs data-replace=\"1\">$comment_text</span>";
 	}
 	
+
+	public function jwt($userId = null){
+		if ($userId === null)
+			$user = wp_get_current_user();
+		elseif($userId != 0)
+			$user = get_user_by( 'id', $userId);
+		
+		if (empty($user) || !$current_user->ID)
+			return null;
+		
+		$token = array(
+			'short_name'=>	$this->shortName,
+			'user_key'	=>	$user->ID,
+			'name'		=>	$user->display_name,
+		);
+		
+		return self::encodeJWT($token, $this->secret);
+	}
+	
+	/**
+	 * @deprecated
+	 * @param string|int $userId
+	 * @return mixed
+	 */
 	public function userData($userId = null){	// null 代表当前登录用户，0代表游客
 		if ($userId === null)
 			$current_user = wp_get_current_user();
@@ -326,7 +356,6 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 				'login'=>	site_url('wp-login.php', 'login') .'?action=duoshuo_login',
 				'logout'=>	htmlspecialchars_decode(wp_logout_url(), ENT_QUOTES),
 			),
-			'remote_auth'	=>	$this->remoteAuth($this->userData()),
 		);
 		if (!empty($options))
 			$query['options'] = $options;
@@ -946,7 +975,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		$query = array(
 			'callback'	=>	'getSyncOptionsCallback',
 			//'require'	=>	'site,visitor,serverTime',
-			'remote_auth'=>	$this->remoteAuth($this->userData()),
+			'jwt'		=>	$this->jwt(),
 		);
 
 		if ($post->ID)
