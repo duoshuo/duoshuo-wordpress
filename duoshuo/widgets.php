@@ -22,10 +22,6 @@ class Duoshuo_Widget_Recent_Comments extends WP_Widget {
 	function recent_comments_style() {
 		if ( ! current_theme_supports( 'widgets' ) )// Temp hack #14876
 			return;
-		
-		if (!did_action('wp_head')){
-			$this->duoshuoPlugin->printScripts();
-		}
 	}
 	
 	function widget( $args, $instance ) {
@@ -52,7 +48,7 @@ class Duoshuo_Widget_Recent_Comments extends WP_Widget {
 			'show_time'=>	isset($instance['show_time']) ? $instance['show_time'] : 1,
 			'show_title'=>	isset($instance['show_title']) ? $instance['show_title'] : 1,
 			'show_admin'=>	isset($instance['show_admin']) ? $instance['show_admin'] : 1,
-			'avatar_size'=>	32,
+			'avatar_size'=>	30,
 			'excerpt_length'=>	isset($instance['excerpt_length']) ? $instance['excerpt_length'] : 70,
 		);
 		$attribs = '';
@@ -65,6 +61,7 @@ class Duoshuo_Widget_Recent_Comments extends WP_Widget {
 if (typeof DUOSHUO !== 'undefined')
 	DUOSHUO.RecentComments && DUOSHUO.RecentComments('.ds-recent-comments');
 </script><?php 
+		$this->duoshuoPlugin->printScripts();
 	}
 
 
@@ -166,7 +163,7 @@ class Duoshuo_Widget_Top_Threads extends WP_Widget {
 			'num_items'	=>	$number,
 			'range'		=>	isset($instance['range']) ? $instance['range'] : 'weekly',
 			//'show_avatars'=>isset($instance['show_avatars']) ? $instance['show_avatars'] : 1,
-			//'avatar_size'=>	32,
+			//'avatar_size'=>	30,
 		);
 		$attribs = '';
 		foreach ($data as $key => $value)
@@ -178,6 +175,7 @@ class Duoshuo_Widget_Top_Threads extends WP_Widget {
 if (typeof DUOSHUO !== 'undefined')
 	DUOSHUO.TopThreads && DUOSHUO.TopThreads('.ds-top-threads');
 </script><?php 
+		$this->duoshuoPlugin->printScripts();
 	}
 
 	function update( $new_instance, $old_instance ) {
@@ -234,15 +232,13 @@ class Duoshuo_Widget_Recent_Visitors extends WP_Widget {
 
 		//add_action( 'comment_post', array(&$this, 'flush_widget_cache') );
 		//add_action( 'transition_comment_status', array(&$this, 'flush_widget_cache') );
+		
+		$this->duoshuoPlugin = Duoshuo_WordPress::getInstance();
 	}
 
 	function printScripts() {
 		if ( ! current_theme_supports( 'widgets' ) )// Temp hack #14876
 			return;
-		
-		if (!did_action('wp_head')){
-			$this->duoshuoPlugin->printScripts();
-		}
 	}
 	
 	function widget( $args, $instance ) {
@@ -257,7 +253,7 @@ class Duoshuo_Widget_Recent_Visitors extends WP_Widget {
  		$title = apply_filters( 'widget_title', empty( $instance['title'] ) ? '最近访客' : $instance['title'], $instance, $this->id_base );
 
 		if ( empty( $instance['number'] ) || ! $number = absint( $instance['number'] ) )
- 			$number = 15;
+ 			$number = 12;
 
 		$output .= $before_widget;
 		if ( $title )
@@ -266,7 +262,7 @@ class Duoshuo_Widget_Recent_Visitors extends WP_Widget {
 		$data = array(
 			'num_items'	=>	$number,
 			'show_time'=>	isset($instance['show_time']) ? $instance['show_time'] : 1,
-			'avatar_size'=>	50,
+			'avatar_size'=>	isset($instance['avatar_size']) ? $instance['avatar_size'] : 50,
 		);
 		$attribs = '';
 		foreach ($data as $key => $value)
@@ -278,6 +274,7 @@ class Duoshuo_Widget_Recent_Visitors extends WP_Widget {
 if (typeof DUOSHUO !== 'undefined')
 	DUOSHUO.RecentVisitors('.ds-recent-visitors');
 </script><?php 
+		$this->duoshuoPlugin->printScripts();
 	}
 
 
@@ -286,6 +283,7 @@ if (typeof DUOSHUO !== 'undefined')
 		$instance['title'] = strip_tags($new_instance['title']);
 		$instance['number'] = absint( $new_instance['number'] );
 		$instance['show_time'] =  absint( $new_instance['show_time'] );
+		$instance['avatar_size'] =  absint( $new_instance['avatar_size'] );
 		
 		$alloptions = wp_cache_get( 'alloptions', 'options' );
 		if ( isset($alloptions['duoshuo_widget_recent_visitors']) )
@@ -298,6 +296,7 @@ if (typeof DUOSHUO !== 'undefined')
 		$title = isset($instance['title']) ? esc_attr($instance['title']) : '';
 		$number = isset($instance['number']) ? absint($instance['number']) : 15;
 		$show_time = isset($instance['show_time']) ? absint($instance['show_time']) : 1;
+		$avatar_size = isset($instance['avatar_size']) ? absint($instance['avatar_size']) : 50;
 ?>
 		<p><label for="<?php echo $this->get_field_id('title'); ?>"><?php _e('Title:'); ?></label>
 		<input class="widefat" id="<?php echo $this->get_field_id('title'); ?>" name="<?php echo $this->get_field_name('title'); ?>" type="text" value="<?php echo $title; ?>" /></p>
@@ -310,6 +309,8 @@ if (typeof DUOSHUO !== 'undefined')
 		
 		<p><label for="<?php echo $this->get_field_id('number'); ?>">显示访客的数量：</label>
 		<input id="<?php echo $this->get_field_id('number'); ?>" name="<?php echo $this->get_field_name('number'); ?>" type="text" value="<?php echo $number; ?>" size="3" /></p>
+		<p><label for="<?php echo $this->get_field_id('avatar_size'); ?>">头像尺寸：</label>
+		<input id="<?php echo $this->get_field_id('avatar_size'); ?>" name="<?php echo $this->get_field_name('avatar_size'); ?>" type="text" value="<?php echo $avatar_size; ?>" size="3" />px</p>
 <?php
 	}
 }

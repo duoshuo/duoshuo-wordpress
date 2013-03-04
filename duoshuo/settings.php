@@ -28,19 +28,33 @@
 		</tr>
 		<tr valign="top">
 			<th scope="row">本地数据备份</th>
-			<td><label><input type="checkbox" name="duoshuo_cron_sync_enabled" value="1" <?php if (get_option('duoshuo_cron_sync_enabled')) echo ' checked="checked"';?>/>定时从多说备份评论到本地</label></td>
+			<td>
+				<input type="hidden" name="duoshuo_cron_sync_enabled" value="0">
+				<label><input type="checkbox" name="duoshuo_cron_sync_enabled" value="1" <?php if (get_option('duoshuo_cron_sync_enabled')) echo ' checked="checked"';?>/>定时从多说备份评论到本地</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">SEO优化</th>
-			<td><label><input type="checkbox" name="duoshuo_seo_enabled" value="1" <?php if (get_option('duoshuo_seo_enabled')) echo ' checked="checked"';?>/>搜索引擎爬虫访问网页时，显示静态HTML评论</label></td>
+			<td>
+				<input type="hidden" name="duoshuo_seo_enabled" value="0">
+				<label><input type="checkbox" name="duoshuo_seo_enabled" value="1" <?php if (get_option('duoshuo_seo_enabled')) echo ' checked="checked"';?>/>搜索引擎爬虫访问网页时，显示静态HTML评论</label></td>
+		</tr>
+		<tr valign="top">
+			<th scope="row">脚本后置</th>
+			<td>
+				<input type="hidden" name="duoshuo_postpone_print_scripts" value="0">
+				<label><input type="checkbox" name="duoshuo_postpone_print_scripts" value="1" <?php if (get_option('duoshuo_postpone_print_scripts')) echo ' checked="checked"';?> />在网页底部才插入多说核心脚本embed.js</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">评论数修正</th>
-			<td><label><input type="checkbox" name="duoshuo_cc_fix" value="1" <?php if (get_option('duoshuo_cc_fix')) echo ' checked="checked"';?> />AJAX加载文章的评论数</label></td>
+			<td>
+				<input type="hidden" name="duoshuo_cc_fix" value="0">
+				<label><input type="checkbox" name="duoshuo_cc_fix" value="1" <?php if (get_option('duoshuo_cc_fix')) echo ' checked="checked"';?> />AJAX加载文章的评论数</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">社交帐号登录</th>
-			<td><label><input type="checkbox" name="duoshuo_social_login_enabled" value="1" <?php if (get_option('duoshuo_social_login_enabled')) echo ' checked="checked"';?>/>允许用社交帐号登录WordPress</label></td>
+			<td>
+				<input type="hidden" name="duoshuo_social_login_enabled" value="0">
+				<label><input type="checkbox" name="duoshuo_social_login_enabled" value="1" <?php if (get_option('duoshuo_social_login_enabled')) echo ' checked="checked"';?>/>允许用社交帐号登录WordPress</label></td>
 		</tr>
 		<tr valign="top">
 			<th scope="row">评论框前缀</th>
@@ -52,7 +66,9 @@
 		</tr>
 		<tr valign="top">
 			<th scope="row">调试开关</th>
-			<td><label><input type="checkbox" name="duoshuo_debug" value="1" <?php if (get_option('duoshuo_debug')) echo ' checked="checked"';?>/>Debug调试开关</label><br /><span class="description">仅在出现故障向多说汇报错误信息时打开</span></td>
+			<td>
+				<input type="hidden" name="duoshuo_debug" value="0">
+				<label><input type="checkbox" name="duoshuo_debug" value="1" <?php if (get_option('duoshuo_debug')) echo ' checked="checked"';?>/>Debug调试开关</label><br /><span class="description">仅在出现故障向多说汇报错误信息时打开</span></td>
 		</tr>
 		</tbody>
 	</table>
@@ -80,7 +96,7 @@
 </div>
 
 <h3>意见反馈</h3>
-<p>你的意见是多说成长的原动力，<a href="http://dev.duoshuo.com/discussion" target="_blank">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
+<p>你的意见是多说成长的原动力，<a href="http://dev.duoshuo.com/wordpress-plugin" target="_blank">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
 <p>
 	<iframe width="120" height="23" frameborder="0" allowtransparency="true" marginwidth="0" marginheight="0" scrolling="no" frameborder="No" border="0" src="http://widget.weibo.com/relationship/followbutton.php?language=zh_cn&width=120&height=24&uid=2468548203&style=2&btn=red&dpc=1"></iframe>
 	<iframe id="previewmc" src="http://follow.v.t.qq.com/index.php?c=follow&a=quick&name=duo-shuo&style=3&t=1327999237149&f=1" allowtransparency="true" style="margin:0 auto;" frameborder="0" height="23" scrolling="no" width="100"></iframe>

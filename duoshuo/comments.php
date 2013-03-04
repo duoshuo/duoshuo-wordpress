@@ -3,9 +3,7 @@ if (!isset($post))
 	global $post;
 
 $duoshuoPlugin = Duoshuo_WordPress::getInstance();
-if (!did_action('wp_head')){
-	$duoshuoPlugin->printScripts();
-}
+$duoshuoPlugin->printScripts();
 
 $topPost = $duoshuoPlugin->topPost($post);
 
