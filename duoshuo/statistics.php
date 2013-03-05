@@ -9,5 +9,5 @@ $adminUrl = 'http://' . $this->shortName . '.' . self::DOMAIN . '/admin/statisti
 <?php screen_icon(); ?>
 <h2>数据统计
 <a class="add-new-h2" target="_blank" href="<?php echo $adminUrl;?>">在新窗口中打开</a></h2>
-<iframe id="duoshuo-remote-window" src="<?php echo $adminUrl;?>" style="width:100%;height:950px"></iframe>
+<iframe id="duoshuo-remote-window" src="<?php echo $adminUrl;?>" style="width:100%;height:920px"></iframe>
 </div>

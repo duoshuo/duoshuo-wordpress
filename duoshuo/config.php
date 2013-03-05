@@ -9,9 +9,6 @@ $params = $this->packageOptions() + array(
 	'user_name'	=>	$user->display_name,
 	'sync_log'	=>	1,
 );
-
-if ($this->shortName)
-	$params['short_name'] = $this->shortName;
 ?>
 <iframe id="duoshuo-remote-window" src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" style="width:100%;height:580px;"></iframe>
 </div>
