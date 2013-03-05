@@ -32,6 +32,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		'duoshuo_seo_enabled'			=>	1,
 		'duoshuo_postpone_print_scripts'=>	0,
 		'duoshuo_cc_fix'				=>	1,
+		'duoshuo_sync_pingback_and_trackback'=>	0,
 		'duoshuo_social_login_enabled'	=>	1,
 		'duoshuo_comments_wrapper_intro'=>	'',
 		'duoshuo_comments_wrapper_outro'=>	'',
@@ -269,7 +270,8 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    if ($topPost === null)	//	 可能是inherit 但post_parent=0
 	    	return;
 	    
-	    if ( !( is_singular() && ( have_comments() || 'open' == $topPost->comment_status ) ) ) {
+	    if ( !( is_singular() && ( have_comments() || 'open' == $topPost->comment_status ) )
+	    	|| get_post_meta($topPost->ID, 'duoshuo_status', true) == 'disabled' ) {
 	        return;
 	    }
 		/*
@@ -296,10 +298,24 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    //	return $value;
 	}
 	
+	public function commentsPopupLinkAttributes($attribs){
+		global $post;
+		
+		$threadKey = $this->threadKey($post);
+		if ($threadKey === null)	//	post_status = inherit, post_parent = 0
+			return $attribs;
+		
+		if (has_filter('comments_number', array($this, 'commentsText')))
+			remove_filter('comments_number', array($this, 'commentsText'));
+		
+		$attribs .= ' class="ds-thread-count" data-thread-key="' . $threadKey .'"';
+		return $attribs;
+	}
+	
 	public function commentsText($comment_text, $number = null){
 	    global $post;
-	    $threadKey = $this->threadKey($post);
 	    
+	    $threadKey = $this->threadKey($post);
 	    if ($threadKey === null)	//	post_status = inherit, post_parent = 0
 	    	return $comment_text;
 	    
@@ -310,7 +326,6 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		    return "<span $attribs data-replace=\"1\">$comment_text</span>";
 	}
 	
-
 	public function jwt($userId = null){
 		if ($userId === null)
 			$user = wp_get_current_user();
@@ -1040,6 +1055,21 @@ function getSyncOptionsCallback(rsp){
 })();
 </script>
 		<?php 
+	}
+	
+	public function commentStatusMetaBoxOptions($post){?>
+		<br /><input name="duoshuo_status" type="hidden" value="enabled" />
+		<label for="duoshuo_status" class="selectit"><input name="duoshuo_status" type="checkbox" id="duoshuo_status" value="disabled" <?php checked($post->duoshuo_status, 'disabled'); ?> /> <?php _e( '这个页面不使用多说评论框' ); ?></label>
+	<?php 
+	}
+	
+	public function savePostDuoshuoStatus($postId){
+		if (isset($_POST['duoshuo_status'])){
+			if ($_POST['duoshuo_status'] == 'disabled')
+				update_post_meta($postId, 'duoshuo_status', 'disabled');
+			else
+				delete_post_meta($postId, 'duoshuo_status');
+		}
 	}
 	
 	public function managePostComments($post){

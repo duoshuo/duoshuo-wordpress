@@ -104,6 +104,8 @@ function duoshuo_admin_initialize(){
 		add_meta_box('duoshuo-comments', '来自社交网站的评论(多说)', array($duoshuoPlugin,'managePostComments'), 'post', 'normal', 'low');
 	 */
 	
+	add_action('post_comment_status_meta_box-options', array($duoshuoPlugin, 'commentStatusMetaBoxOptions'));
+	
 	add_action('profile_update', array($duoshuoPlugin, 'syncUserToRemote'));
 	add_action('user_register', array($duoshuoPlugin, 'syncUserToRemote'));
 	
@@ -160,11 +162,15 @@ function duoshuo_initialize(){
 	//以下应该根据是否设置，选择是否启用
 	add_filter('comments_template', array($duoshuoPlugin,'commentsTemplate'));
 	
-	if (get_option('duoshuo_cc_fix')) //直接输出HTML评论
+	if (get_option('duoshuo_cc_fix')){ //直接输出HTML评论
+		add_filter('comments_popup_link_attributes', array($duoshuoPlugin, 'commentsPopupLinkAttributes'));
 		add_filter('comments_number', array($duoshuoPlugin, 'commentsText'));
-		
-	add_action('trackback_post', array($duoshuoPlugin, 'exportOneComment'));
-	add_action('pingback_post', array($duoshuoPlugin, 'exportOneComment'));
+	}
+	
+	if (get_option('duoshuo_sync_pingback_and_trackback')){
+		add_action('trackback_post', array($duoshuoPlugin, 'exportOneComment'));
+		add_action('pingback_post', array($duoshuoPlugin, 'exportOneComment'));
+	}
 	
 	duoshuo_common_initialize();
 }
@@ -173,7 +179,7 @@ function duoshuo_common_initialize(){
 	global $duoshuoPlugin;
 	// 没有用cookie方式保持身份，所以不需要重定向
 	//add_action('wp_logout', array($duoshuoPlugin, 'logout'));
-	add_filter('comments_open', array($duoshuoPlugin, 'commentsOpen'));
+	add_filter('comments_open', array($duoshuoPlugin, 'commentsOpen'), 10, 2);
 	add_action('set_auth_cookie', array($duoshuoPlugin, 'setJwtCookie'), 10, 5);
 	
 	if ($duoshuoPlugin->getOption('cron_sync_enabled')){
@@ -344,7 +350,8 @@ else{
 
 add_action('widgets_init', 'duoshuo_register_widgets');
 
-add_action('save_post', array($duoshuoPlugin, 'syncPostToRemote'));
+add_action('save_post', array($duoshuoPlugin, 'savePostDuoshuoStatus'));
+add_action('save_post', array($duoshuoPlugin, 'syncPostToRemote'), 10, 2);
 
 /*
 if (function_exists('get_post_types')){	//	cron jobs runs in common mode, sometimes

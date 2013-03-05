@@ -39,6 +39,12 @@
 				<label><input type="checkbox" name="duoshuo_seo_enabled" value="1" <?php if (get_option('duoshuo_seo_enabled')) echo ' checked="checked"';?>/>搜索引擎爬虫访问网页时，显示静态HTML评论</label></td>
 		</tr>
 		<tr valign="top">
+			<th scope="row">Pingback和Trackback</th>
+			<td>
+				<input type="hidden" name="duoshuo_sync_pingback_and_trackback" value="0">
+				<label><input type="checkbox" name="duoshuo_sync_pingback_and_trackback" value="1" <?php if (get_option('duoshuo_sync_pingback_and_trackback')) echo ' checked="checked"';?>/>将接收到的Pingback和Trackback同步到多说</label></td>
+		</tr>
+		<tr valign="top">
 			<th scope="row">脚本后置</th>
 			<td>
 				<input type="hidden" name="duoshuo_postpone_print_scripts" value="0">
@@ -88,10 +94,10 @@
 <?php include_once dirname(__FILE__) . '/common-script.html';?>
 
 <div>
-<h3>卸载</h3>
-<form action="" method="post" onsubmit="return confirm('你确定要卸载多说评论插件吗？');">
+<h3>清空多说站点配置</h3>
+<form action="" method="post" onsubmit="return confirm('你确定要清空多说站点配置吗？');">
 	<input type="hidden" name="action" value="duoshuo_uninstall" />
-	<p class="submit"><input type="submit" class="button" value="卸载" name="duoshuo_uninstall" /></p>
+	<p class="submit">如果你希望本博客和其他多说站点进行绑定，或者创建新的多说站点，点此 <input type="submit" class="button" value="清空配置" name="duoshuo_uninstall" /></p>
 </form>
 </div>
 
