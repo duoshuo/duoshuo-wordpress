@@ -12,10 +12,11 @@ class Duoshuo_Client{
 	var $userAgent;
 	var $shortName;
 	var $secret;
+	var $jwt;
 	var $accessToken;
 	var $http;
 	
-	function __construct($shortName = null, $secret = null, $jwt = null, $accessToken = null){
+	public function __construct($shortName = null, $secret = null, $jwt = null, $accessToken = null){
 		global $wp_version;
 		
 		$this->shortName = $shortName;
@@ -34,7 +35,7 @@ class Duoshuo_Client{
 	 * @throws Duoshuo_Exception
 	 * @return array
 	 */
-	function request($method, $path, $params = array()){
+	public function request($method, $path, $params = array()){
         $params['short_name'] = $this->shortName;
         $params['secret'] = $this->secret;
         
@@ -49,7 +50,7 @@ class Duoshuo_Client{
 		return $this->httpRequest($url, $method, $params);
 	}
 	
-	function httpRequest($url, $method, $params){
+	public function httpRequest($url, $method, $params){
 		$args = array(
 			'method' => $method,
 			'timeout' => 60,
@@ -104,7 +105,7 @@ class Duoshuo_Client{
 	 * @param string $type
 	 * @param array $keys
 	 */
-	function getAccessToken( $type, $keys ) {
+	public function getAccessToken( $type, $keys ) {
 		$params = array(
 			'client_id'	=>	$this->shortName,
 			'client_secret' => $this->secret,

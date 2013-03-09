@@ -2,7 +2,7 @@
 $params = array(
 	'jwt'	=>	$this->jwt(),
 );
-$settingsUrl = 'http://' . self::DOMAIN.'/settings/?' . http_build_query($params);
+$settingsUrl = 'http://' . self::DOMAIN . '/settings/?' . http_build_query($params, null, '&');
 ?>
 <link rel="stylesheet" href="<?php echo $this->pluginDirUrl; ?>styles.css" type="text/css" />
 

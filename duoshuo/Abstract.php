@@ -153,12 +153,36 @@ class Duoshuo_Abstract {
 		return implode('.', $segments);
 	}
 	
+	// from: http://www.php.net/manual/en/function.sha1.php#39492
+	// Calculate HMAC-SHA1 according to RFC2104
+	// http://www.ietf.org/rfc/rfc2104.txt
+	static function hmacsha1($data, $key) {
+		if (function_exists('hash_hmac'))
+			return hash_hmac('sha1', $data, $key, true);
+	
+		$blocksize=64;
+		if (strlen($key)>$blocksize)
+			$key=pack('H*', sha1($key));
+		$key=str_pad($key,$blocksize,chr(0x00));
+		$ipad=str_repeat(chr(0x36),$blocksize);
+		$opad=str_repeat(chr(0x5c),$blocksize);
+		$hmac = pack(
+				'H*',sha1(
+						($key^$opad).pack(
+								'H*',sha1(
+										($key^$ipad).$data
+								)
+						)
+				)
+		);
+		return $hmac;
+	}
+	
 	/**
 	 * from: http://www.php.net/manual/en/function.sha1.php#39492
 	 * Calculate HMAC-SHA1 according to RFC2104
 	 * http://www.ietf.org/rfc/rfc2104.txt
 	 * Used in OAuth1 and remoteAuth
-	 * @deprecated
 	 */
 	static function hmacsha256($data, $key) {
 		if (function_exists('hash_hmac'))
@@ -167,7 +191,7 @@ class Duoshuo_Abstract {
 		if (!class_exists('nanoSha2'))
 			require 'nanoSha2.php';
 		
-		$nanoSha2 = new nanoSha2((defined('_NANO_SHA2_UPPER')) ? true : false);
+		$nanoSha2 = new nanoSha2();
 		
 	    $blocksize=64;
 	    if (strlen($key)>$blocksize)
@@ -178,7 +202,7 @@ class Duoshuo_Abstract {
 	    $hmac = pack(
 	                'H*',$nanoSha2->hash(
 	                    ($key^$opad).pack(
-	                        'H*', $nanoSha2(($key^$ipad).$data, true)
+	                        'H*', $nanoSha2->hash(($key^$ipad).$data, true)
 	                    ),
 	                	true
 	                )
@@ -189,13 +213,14 @@ class Duoshuo_Abstract {
 	function exportUsers($users){
 		if (count($users) === 0)
 			return 0;
-	
+		
 		$params = array('users'=>array());
 		foreach($users as $user)
 			$params['users'][] = $this->packageUser($user);
 		 
 		$remoteResponse = $this->getClient()->request('POST', 'users/import', $params);
 		
+		//	@deprecated 不再需要记录duoshuo_user_id
 		if (is_array($remoteResponse) && isset($remoteResponse['response'])){
 			foreach($remoteResponse['response'] as $userId => $duoshuoUserId)
 				$this->updateUserMeta($userId, 'duoshuo_user_id', $duoshuoUserId);

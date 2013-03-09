@@ -57,7 +57,7 @@ class Duoshuo_LocalServer{
 		ksort($input);
 		$baseString = http_build_query($input, null, '&');
 	
-		$expectSignature = base64_encode(hash_hmac('sha1', $baseString, $this->plugin->getOption('secret'), true));
+		$expectSignature = base64_encode(Duoshuo_Abstract::hmacsha1($baseString, $this->plugin->getOption('secret')));
 		if ($signature !== $expectSignature)
 			throw new Duoshuo_Exception('Invalid signature, expect: ' . $expectSignature . '. (' . $baseString . ')', Duoshuo_Exception::INVALID_SIGNATURE);
 	

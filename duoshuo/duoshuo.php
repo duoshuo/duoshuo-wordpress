@@ -106,9 +106,6 @@ function duoshuo_admin_initialize(){
 	
 	add_action('post_comment_status_meta_box-options', array($duoshuoPlugin, 'commentStatusMetaBoxOptions'));
 	
-	add_action('profile_update', array($duoshuoPlugin, 'syncUserToRemote'));
-	add_action('user_register', array($duoshuoPlugin, 'syncUserToRemote'));
-	
 	add_action('wp_dashboard_setup', 'duoshuo_add_dashboard_widget');
 	
 	//// backwards compatible (before WP 3.0)
@@ -148,9 +145,9 @@ function duoshuo_initialize(){
 		return;
 	}
 	
-	if ($duoshuoPlugin->getOption('social_login_enabled'))
+	if ($duoshuoPlugin->getOption('social_login_enabled')){
 		add_action('login_form', array($duoshuoPlugin, 'loginForm'));
-	//add_action('wp_login', array($duoshuoPlugin, 'login'));
+	}
 	
 	// wp2.8 以后支持这个事件
 	if (get_option('duoshuo_postpone_print_scripts'))
@@ -181,6 +178,11 @@ function duoshuo_common_initialize(){
 	//add_action('wp_logout', array($duoshuoPlugin, 'logout'));
 	add_filter('comments_open', array($duoshuoPlugin, 'commentsOpen'), 10, 2);
 	add_action('set_auth_cookie', array($duoshuoPlugin, 'setJwtCookie'), 10, 5);
+	add_action('clear_auth_cookie', array($duoshuoPlugin, 'clearJwtCookie'));
+	
+	add_action('profile_update', array($duoshuoPlugin, 'syncUserToRemote'));
+	add_action('user_register', array($duoshuoPlugin, 'userRegisterHook'));
+	add_action('wp_login', array($duoshuoPlugin, 'bindUser'), 10, 2);
 	
 	if ($duoshuoPlugin->getOption('cron_sync_enabled')){
 		add_action('duoshuo_sync_log_cron', array($duoshuoPlugin, 'syncLog'));
@@ -304,8 +306,8 @@ function duoshuo_request_handler(){
 	if ($_SERVER['REQUEST_METHOD'] == 'POST'){
 		switch ($parent_file){
 			case 'duoshuo':
-				if (isset($_POST['duoshuo_uninstall']))
-					$duoshuoPlugin->uninstall();
+				if (isset($_POST['duoshuo_reset']))
+					$duoshuoPlugin->reset();
 				if (isset($_POST['duoshuo_local_options']))
 					$duoshuoPlugin->updateLocalOptions();
 				break;

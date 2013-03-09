@@ -130,6 +130,17 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		setcookie('duoshuo_token', $jwt, $expire, COOKIEPATH, COOKIE_DOMAIN, $secure_logged_in_cookie);
 		if ( COOKIEPATH != SITECOOKIEPATH )
 			setcookie('duoshuo_token', $jwt, $expire, SITECOOKIEPATH, COOKIE_DOMAIN, $secure_logged_in_cookie);
+		
+		$this->syncUserToRemote($user_id);
+	}
+	
+	public function clearJwtCookie(){
+		//setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN );
+		setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, ADMIN_COOKIE_PATH,   COOKIE_DOMAIN );
+		setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, COOKIEPATH,          COOKIE_DOMAIN );
+		
+		if ( COOKIEPATH != SITECOOKIEPATH )
+			setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, SITECOOKIEPATH,      COOKIE_DOMAIN );
 	}
 	
 	public function userLogin($token){
@@ -152,16 +163,75 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			}
 		}
 		else{
-			//	TODO
-			//	如果站点开启注册
-			//	如果站点不开启注册，则把用户带回入口页
-			if (isset($_GET['redirect_to']) && $_GET['redirect_to'] !== admin_url()){
-				wp_redirect($_GET['redirect_to']);
-				exit;
+			if (get_option('users_can_register')){//	如果站点开启注册
+				
+				// 要求用户输入帐号进行绑定
+				$client = new Duoshuo_Client($this->shortName, $this->secret, null, $token['access_token']);
+				$response = $client->request('GET', 'users/profile', array('user_id'=> $token['user_id']));
+				
+				$query = array(
+					'action'			=>	'register',
+					'duoshuo_user_id'	=>	$token['user_id'],
+					'duoshuo_access_token'=>$token['access_token'],
+				);
+				
+				$this->duoshuoUserId = $token['user_id'];
+				
+				$registerUrl = site_url( 'wp-login.php?' . http_build_query($query), 'login' );
+				$error = esc_html($response['response']['name']) . '，请输入你的本站帐号进行帐号绑定；<br />如果你还没有本站帐号，请<a href="' . esc_url($registerUrl) . '">注册</a>';
 			}
-			else{	//如果是从wp-login页面发起的请求，就不触发重定向
-				$error = '你授权的社交帐号没有和本站的用户帐号绑定；<br />如果你是本站注册用户，请先登录之后绑定社交帐号';
+			else{//	如果站点未开启注册
+				//	把用户带回入口页
+				if (isset($_GET['redirect_to']) && $_GET['redirect_to'] !== admin_url()){
+					wp_redirect($_GET['redirect_to']);
+					exit;
+				}
+				else{	//如果是从wp-login页面发起的请求，就不触发重定向
+					$error = '你授权的社交帐号没有和本站的用户帐号绑定；<br />如果你是本站注册用户，请先登录之后绑定社交帐号';
+				}
 			}
+		}
+	}
+	
+	public function bindUser($user_login, $user){
+		if (isset($_POST['duoshuo_user_id'])){
+			$query = array(
+				'master_user_id'=>	$_POST['duoshuo_user_id'],
+				'jwt'			=>	$this->jwt($user->ID),
+				'redirect_uri'	=>	admin_url(),
+			);
+			
+			wp_redirect('http://duoshuo.com/merge/?'. http_build_query($query, null, '&'));
+			exit;
+		}
+	}
+	
+	public function userRegisterHook($userId){
+		if (!$this->connected())
+			return ;
+		
+		//	WP_User
+		$user = get_user_by('id', $userId);
+		
+		try{
+			if (isset($_POST['user_login']) && isset($_POST['duoshuo_access_token'])){
+				//	已登录多说帐号，且多说帐号并未与本站user_key绑定
+				$client = new Duoshuo_Client($this->shortName, $this->secret, null, $_POST['duoshuo_access_token']);
+				
+				$params = array(
+					'user' => $this->packageUser($user),
+				);
+				$remoteResponse = $client->request('POST', 'sites/join', $params);
+				//	不再需要记录duoshuo_user_id
+			}
+			else{
+				//	未登录多说帐号
+				
+				$this->exportUsers(array($user));
+			}
+		}
+		catch(Duoshuo_Exception $e){
+			update_option('duoshuo_connect_failed', time());
 		}
 	}
 	
@@ -225,7 +295,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		include dirname(__FILE__) . '/profile.php';
 	}
 	
-	public function uninstall(){
+	public function reset(){
 		//delete_option('duoshuo_short_name');
 		
 		// 删除状态有关的值
@@ -248,7 +318,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			delete_metadata('comment', 0, 'duoshuo_post_id', '', true);
 		}
 		
-		$redirect_url = add_query_arg('message', 'uninstalled', admin_url('admin.php?page=duoshuo'));
+		$redirect_url = add_query_arg('message', 'reset', admin_url('admin.php?page=duoshuo'));
 		wp_redirect($redirect_url);
 		exit;
 	}
@@ -412,8 +482,7 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 		if ($this->_scriptsPrinted)
 			return;
 		$this->_scriptsPrinted = true;
-		
-		$duoshuo_shortname = 'static';?>
+		?>
 <script type="text/javascript">
 var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
@@ -421,11 +490,10 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 (function() {
     var ds = document.createElement('script'); ds.type = 'text/javascript'; ds.async = true;
     ds.charset = 'UTF-8';
-    ds.src = 'http://<?php echo $duoshuo_shortname;?>.duoshuo.com/embed.js';
+    ds.src = 'http://static.duoshuo.com/embed.js';
     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
 })();
 </script><?php
-		$scriptsPrinted = true;
 	}
 	
 	/** 不再替换原生最新评论widget
@@ -435,13 +503,24 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 	 */
 	
 	public function loginForm(){
-		$redirectUri = add_query_arg(array('action'=>'duoshuo_login', 'redirect_to'=>urlencode(admin_url())), site_url('wp-login.php', 'login'));?>
+		if ($_REQUEST['action'] === 'duoshuo_login' && isset($this->duoshuoUserId)){ // 登录后发现没有本站帐号，输入帐号进行绑定 ?>
+			<input type="hidden" name="duoshuo_user_id" value="<?php echo $this->duoshuoUserId;?>" />
+<?php 
+		}
+		elseif (isset($_REQUEST['duoshuo_access_token'])){ ?>
+			<input type="hidden" name="duoshuo_access_token" value="<?php echo $_REQUEST['duoshuo_access_token'];?>" />
+<?php 
+		}
+		else{
+			$redirectUri = add_query_arg(array('action'=>'duoshuo_login', 'redirect_to'=>urlencode(admin_url())), site_url('wp-login.php', 'login'));?>
 <div class="ds-login" style="height:40px;"></div>
+<?php $this->printScripts();?>
 <script>
 if (window.duoshuoQuery && duoshuoQuery.sso)
 	duoshuoQuery.sso.login = <?php echo json_encode($redirectUri);?>;
 </script>
 <?php
+		}
 	}
 
 	public function connectSite(){
@@ -578,7 +657,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			return ;
 		
 		//	WP_User
-		$userData = get_userdata($userId);
+		$userData = get_user_by('id', $userId);
 		
 		try{
 			$this->exportUsers(array($userData));
@@ -654,6 +733,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 				'created_at'=>	$userData->user_registered,
 				'meta'		=>	json_encode($userData),
 		);
+		
+		$avatar_data = array();
+		if (preg_match('/(src)=((\'|")[^(\'|")]*(\'|"))/i', get_avatar($userData->ID), $avatar_data))
+			$data['avatar_url'] = htmlspecialchars_decode(str_replace(array('"', "'"), '', $avatar_data[2]), ENT_QUOTES);
 		
 		foreach($roleMap as $wpRole => $role)
 			if (isset($capabilities[$wpRole]) && $capabilities[$wpRole]){
@@ -946,8 +1029,8 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		}
 		
 		$messages = array(
-			'registered'	=>'<strong>注册成功，请同步数据</strong>',
-			'uninstalled'	=>'<strong>已卸载</strong>',
+			'registered'=>'<strong>注册成功，请同步数据</strong>',
+			'reset'		=>'<strong>已重置</strong>',
 		);
 		if (isset($_GET['message']) && isset($messages[$_GET['message']]))
 			echo '<div class="updated"><p>'.$messages[$_GET['message']].'</p></div>';
@@ -1000,7 +1083,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		if ($post->ID)
 			$query['thread_key'] = $post->ID;
 
-		$jsonpUrl = 'http://' . $this->shortName . '.duoshuo.com/api/users/syncOptions.jsonp?' . http_build_query($query);
+		$jsonpUrl = 'http://' . $this->shortName . '.duoshuo.com/api/users/syncOptions.jsonp?' . http_build_query($query, null, '&');
 		?>
 <script>
 function getSyncOptionsCallback(rsp){
@@ -1059,7 +1142,7 @@ function getSyncOptionsCallback(rsp){
 	
 	public function commentStatusMetaBoxOptions($post){?>
 		<br /><input name="duoshuo_status" type="hidden" value="enabled" />
-		<label for="duoshuo_status" class="selectit"><input name="duoshuo_status" type="checkbox" id="duoshuo_status" value="disabled" <?php checked($post->duoshuo_status, 'disabled'); ?> /> <?php _e( '这个页面不使用多说评论框' ); ?></label>
+		<label for="duoshuo_status" class="selectit"><input name="duoshuo_status" type="checkbox" id="duoshuo_status" value="disabled" <?php checked($post->duoshuo_status, 'disabled'); ?> /> <?php _e( '这个页面不启用多说评论框' ); ?></label>
 	<?php 
 	}
 	
