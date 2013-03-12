@@ -119,6 +119,20 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			: true;
 	}
 	
+	public function normalizeUrl($url){
+		if (strpos($url, '/') === 0){
+			$site_url = get_option('site_url');
+			
+			if (false !== $pos = strpos($site_url, '/', 8))
+				$site_url = substr($site_url, 0, $pos);
+			
+			return $site_url . $url;
+		}
+		else{
+			return $url;
+		}
+	}
+	
 	public function setJwtCookie($logged_in_cookie, $expire, $expiration, $user_id, $scheme){
 		$jwt = $this->jwt($user_id);
 		$secure = $scheme == 'secure_auth';
@@ -790,7 +804,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		if (function_exists('get_post_thumbnail_id')){	//	WordPress 2.9开始支持
 			$post_thumbnail_id = get_post_thumbnail_id( $post->ID );
 			if ( $post_thumbnail_id ) {
-				$params['thumbnail'] = wp_get_attachment_url($post_thumbnail_id);
+				$params['thumbnail'] = $this->normalizeUrl(wp_get_attachment_url($post_thumbnail_id));
 				//$image = wp_get_attachment_image_src( $post_thumbnail_id, $size, false);
 				//list($src, $width, $height) = $image;
 				//$meta = wp_get_attachment_metadata($id);
@@ -811,7 +825,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		$children = get_children($args);
 		if (is_array($children))
 			foreach($children as $attachment)
-				$images[] = wp_get_attachment_url($attachment->ID);
+				$images[] = $this->normalizeUrl(wp_get_attachment_url($attachment->ID));
 		if (!empty($images))
 			$params['images'] = json_encode($images);
 		

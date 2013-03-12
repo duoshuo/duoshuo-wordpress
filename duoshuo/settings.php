@@ -111,6 +111,7 @@
 
 <h3>意见反馈</h3>
 <p>你的意见是多说成长的原动力，<a href="http://dev.duoshuo.com/wordpress-plugin" target="_blank">欢迎给我们留言</a>，或许你想要的功能下一个版本就会实现哦！</p>
+<p>多说正在招人！如果你相信改变世界不是资本而是技术；如果你不只是想完成任务，还希望你的巧妙构思实现意想不到的好处；如果你希望和跟你一样聪明的人一起工作。<a href="http://dev.duoshuo.com/threads/5138474ea7e92e7b60010bb9" target="_blank">那么你不妨加入我们！</a></p>
 <p>
 	<iframe width="120" height="23" frameborder="0" allowtransparency="true" marginwidth="0" marginheight="0" scrolling="no" frameborder="No" border="0" src="http://widget.weibo.com/relationship/followbutton.php?language=zh_cn&width=120&height=24&uid=2468548203&style=2&btn=red&dpc=1"></iframe>
 	<iframe id="previewmc" src="http://follow.v.t.qq.com/index.php?c=follow&a=quick&name=duo-shuo&style=3&t=1327999237149&f=1" allowtransparency="true" style="margin:0 auto;" frameborder="0" height="23" scrolling="no" width="100"></iframe>
