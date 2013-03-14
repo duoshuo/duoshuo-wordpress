@@ -23,6 +23,8 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
 	public $secret;
 	
+	protected $_scriptsPrinted = false;
+	
 	protected static $_defaultOptions = array(
 		'duoshuo_debug'					=>	0,
 		'duoshuo_api_hostname'			=>	'api.duoshuo.com',
@@ -470,7 +472,11 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		return $query;
 	}
 	
-	public function printDuoshuoQuery(){?>
+	public function printDuoshuoQuery(){
+		if ($this->_scriptsPrinted)
+			return;
+		$this->_scriptsPrinted = true;
+?>
 <script type="text/javascript">
 var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
@@ -483,15 +489,9 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 	 * 在wp_print_scripts 没有执行的时候执行最传统的代码
 	 */
 	public function printScripts(){
-		static $scriptsPrinted = false;
-		
-		if ($scriptsPrinted)
+		if ($this->_scriptsPrinted)
 			return;
-		
-		$scriptsPrinted = true;
-		
-		if (did_action(get_option('duoshuo_postpone_print_scripts') ? 'wp_print_footer_scripts' : 'wp_print_scripts'))
-			return;
+		$this->_scriptsPrinted = true;
 		?>
 <script type="text/javascript">
 var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
