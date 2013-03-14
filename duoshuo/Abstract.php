@@ -17,7 +17,7 @@ class Duoshuo_Abstract {
 	public $secret;
 	
 	public function oauthConnect(){
-			if (!isset($_GET['code']))
+		if (!isset($_GET['code']))
 			return false;
 		
 		$oauth = $this->getClient();

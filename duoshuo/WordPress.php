@@ -149,12 +149,13 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	}
 	
 	public function clearJwtCookie(){
-		//setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN );
-		setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, ADMIN_COOKIE_PATH,   COOKIE_DOMAIN );
-		setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, COOKIEPATH,          COOKIE_DOMAIN );
+		// 3.5版本之前没有定义 YEAR_IN_SECONDS
+		//setcookie( 'duoshuo_token',    ' ', time() - 31536000, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN );
+		setcookie( 'duoshuo_token',    ' ', time() - 31536000, ADMIN_COOKIE_PATH,   COOKIE_DOMAIN );
+		setcookie( 'duoshuo_token',    ' ', time() - 31536000, COOKIEPATH,          COOKIE_DOMAIN );
 		
 		if ( COOKIEPATH != SITECOOKIEPATH )
-			setcookie( 'duoshuo_token',    ' ', time() - YEAR_IN_SECONDS, SITECOOKIEPATH,      COOKIE_DOMAIN );
+			setcookie( 'duoshuo_token',    ' ', time() - 31536000, SITECOOKIEPATH,      COOKIE_DOMAIN );
 	}
 	
 	public function userLogin($token){

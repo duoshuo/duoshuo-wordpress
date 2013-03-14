@@ -128,7 +128,6 @@ Stable tag: 1.0
 5. 多说帮助你和社交网站紧密相连，提升用户黏性，带来更多流量
 
 == Changelog ==
-
 = 1.0 (2013-3-14) =
 * [新增]支持核心代码后置功能
 * [新增]允许单篇文章或页面启用或禁用多说评论框
@@ -145,6 +144,7 @@ Stable tag: 1.0
 * [改进]调整卸载功能的说明文字，补充文档
 * [改进]管理后台代码重构，速度更快更流畅
 * [改进]网页中的相对路径图片，依然能够发微博 (感谢雷锋网的反馈)
+* [修正]删除站点之后无法重新设置帐号的问题
 
 = 0.9 (2012-10-31) =
 * [新增]自定义APIKey功能(暂时仅支持日均访问量大于10000的站点，暂时仅支持新浪微博)
@@ -343,15 +343,16 @@ Stable tag: 1.0
 
 已经有数千家网站开始使用多说，其中包括：
 
-1. [科学松鼠会](http://songshuhui.net/ "科学松鼠会")
+1. [站长之家](http://www.chinaz.com/ "站长之家")
+1. [DoNews](http://www.donews.com/ "DoNews")
+1. [泡泡网](http://www.pcpop.com/ "泡泡网")
+1. [IT168](http://www.it168.com/ "IT168")
 1. [下厨房](http://blog.xiachufang.com/ "下厨房")
 1. [邻居的耳朵](http://kxt.fm/ "邻居的耳朵")
 1. [DNSpod](http://blog.dnspod.cn/ "DNSpod")
 1. [Web2.0Share](http://http://www.web20share.com/ "Web2.0Share")
 1. [Ubuntusoft](http://www.ubuntusoft.com "Ubuntusoft")
 1. [分享网络2.0](www.showeb20.com/ "分享网络2.0")
-1. [太湖明珠网](http://www.thmz.com	 "无锡地方门户")
-1. [果迷网](http://www.guomii.com/ "All about Apple!")
 1. [懒人图库](http://www.lanrentuku.com/ "学会偷懒 懒出境界")
 1. [天堂图片网](http://www.ivsky.com/ "天堂图片网")
 1. [豆果美食](http://blog.douguo.com/ "豆果美食")
@@ -361,10 +362,3 @@ Stable tag: 1.0
 1. [MacGG](http://www.macgg.com/ "MacGG")
 1. [蘑菇爱家居](http://mooogu.cn/blog "蘑菇爱家居")
 1. [微奇生活](http://www.vikilife.com/ "创意玩意集散地")
-
-== 接下来会增加的特性 ==
-
-* 数据统计分析
-* 更强的垃圾评论过滤系统
-* Google+ 帐号支持
-* MSN 帐号支持
