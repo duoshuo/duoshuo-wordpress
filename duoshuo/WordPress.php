@@ -226,7 +226,6 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		
 		//	WP_User
 		$user = get_user_by('id', $userId);
-		
 		try{
 			if (isset($_POST['user_login']) && isset($_POST['duoshuo_access_token'])){
 				//	已登录多说帐号，且多说帐号并未与本站user_key绑定
@@ -240,7 +239,6 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			}
 			else{
 				//	未登录多说帐号
-				
 				$this->exportUsers(array($user));
 			}
 		}
@@ -354,10 +352,13 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    if ($topPost === null)	//	 可能是inherit 但post_parent=0
 	    	return;
 	    
-	    if ( !( is_singular() && ( have_comments() || 'open' == $topPost->comment_status ) )
-	    	|| get_post_meta($topPost->ID, 'duoshuo_status', true) == 'disabled' ) {
+	    if ( !( is_singular() && ( have_comments() || 'open' == $topPost->comment_status ) ) ) {
 	        return;
 	    }
+	    
+	    if (get_post_meta($topPost->ID, 'duoshuo_status', true) == 'disabled')
+	    	return $value;
+	    
 		/*
 	    if ( !dsq_is_installed() || !dsq_can_replace() ) {
 	        return $value;
@@ -1156,7 +1157,7 @@ function getSyncOptionsCallback(rsp){
 	
 	public function commentStatusMetaBoxOptions($post){?>
 		<br /><input name="duoshuo_status" type="hidden" value="enabled" />
-		<label for="duoshuo_status" class="selectit"><input name="duoshuo_status" type="checkbox" id="duoshuo_status" value="disabled" <?php checked($post->duoshuo_status, 'disabled'); ?> /> <?php _e( '这个页面不启用多说评论框' ); ?></label>
+		<label for="duoshuo_status" class="selectit"><input name="duoshuo_status" type="checkbox" id="duoshuo_status" value="disabled" <?php checked(get_post_meta($post->ID, 'duoshuo_status', true), 'disabled'); ?> /> <?php _e( '这个页面不启用多说评论框' ); ?></label>
 	<?php 
 	}
 	

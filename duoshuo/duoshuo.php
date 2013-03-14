@@ -147,6 +147,7 @@ function duoshuo_initialize(){
 	
 	if ($duoshuoPlugin->getOption('social_login_enabled')){
 		add_action('login_form', array($duoshuoPlugin, 'loginForm'));
+		add_action('register_form', array($duoshuoPlugin, 'loginForm'));
 	}
 	
 	// wp2.8 以后支持这个事件
