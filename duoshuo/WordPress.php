@@ -472,7 +472,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		return $query;
 	}
 	
-	public function printDuoshuoQuery(){
+	public function appendScripts(){
 		if ($this->_scriptsPrinted)
 			return;
 		$this->_scriptsPrinted = true;
@@ -482,6 +482,7 @@ var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
 duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
 </script>
+<script type="text/javascript" src="http://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
 <?php 
 	}
 	

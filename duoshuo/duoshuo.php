@@ -151,10 +151,7 @@ function duoshuo_initialize(){
 	}
 	
 	// wp2.8 以后支持这个事件
-	$in_footer = (bool) get_option('duoshuo_postpone_print_scripts');
-	wp_enqueue_script('duoshuo-embed', 'http://static.' . Duoshuo_WordPress::DOMAIN . '/embed.js', array(), false, $in_footer);
-	
-	add_action($in_footer ? 'wp_print_footer_scripts' : 'wp_print_scripts', array($duoshuoPlugin, 'printDuoshuoQuery'));
+	add_action(get_option('duoshuo_postpone_print_scripts') ? 'wp_print_footer_scripts' : 'wp_print_scripts', array($duoshuoPlugin, 'appendScripts'));
 	
 	//以下应该根据是否设置，选择是否启用
 	add_filter('comments_template', array($duoshuoPlugin,'commentsTemplate'));
