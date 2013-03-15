@@ -16,25 +16,6 @@ class Duoshuo_Abstract {
 	 */
 	public $secret;
 	
-	public function oauthConnect(){
-		if (!isset($_GET['code']))
-			return false;
-		
-		$oauth = $this->getClient();
-		
-		$keys = array(
-			'code'	=> $_GET['code'],
-			'redirect_uri' => 'http://duoshuo.com/login-callback/',
-		);
-		
-		$token = $oauth->getAccessToken('code', $keys);
-		
-		if ($token['code'] != 0)
-			return false;
-		
-		$this->userLogin($token);
-	}
-	
 	/**
 	 * 默认的获取Client的函数，可以被派生
 	 * @param string|int $userId

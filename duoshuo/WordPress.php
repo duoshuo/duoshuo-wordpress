@@ -158,6 +158,31 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			setcookie( 'duoshuo_token',    ' ', time() - 31536000, SITECOOKIEPATH,      COOKIE_DOMAIN );
 	}
 	
+	public function oauthConnect(){
+		if (!$this->connected())
+			return ;
+	
+		if (!isset($_GET['code']))
+			return false;
+	
+		try{
+			$keys = array(
+					'code'	=> $_GET['code'],
+					'redirect_uri' => 'http://duoshuo.com/login-callback/',
+			);
+			
+			$token = $this->getClient()->getAccessToken('code', $keys);
+			
+			if ($token['code'] != 0)
+				return false;
+			
+			$this->userLogin($token);
+		}
+		catch(Duoshuo_Exception $e){
+			update_option('duoshuo_connect_failed', time());
+		}
+	}
+	
 	public function userLogin($token){
 		global $wpdb, $error;
 		
