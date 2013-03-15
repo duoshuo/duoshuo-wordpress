@@ -367,8 +367,8 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	public function commentsOpen($open, $post_id = null) {
 	    //if ($this->EMBED || get_post_meta($post_id, 'duoshuo_thread_id', true))
 	    //	return false;
-	    
-	    if (preg_match('/wp\-comments\-post\.php$/', $_SERVER['SCRIPT_NAME']) && get_post_meta($post_id, 'duoshuo_status', true) !== 'disabled')
+		$script_name = array_pop( split( '/', $_SERVER['PHP_SELF'] ) );
+	    if (preg_match('/wp\-comments\-post\.php$/', $script_name) && get_post_meta($post_id, 'duoshuo_status', true) !== 'disabled')
 	    	return false;
 	    
 	    return $open;
