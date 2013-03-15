@@ -365,8 +365,12 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	 * 关闭默认的评论，避免spammer
 	 */
 	public function commentsOpen($open, $post_id = null) {
-	    if ($this->EMBED || get_post_meta($post_id, 'duoshuo_thread_id', true))
+	    //if ($this->EMBED || get_post_meta($post_id, 'duoshuo_thread_id', true))
+	    //	return false;
+	    
+	    if (preg_match('/wp\-comments\-post\.php$/', $_SERVER['SCRIPT_NAME']) && get_post_meta($post_id, 'duoshuo_status', true) !== 'disabled')
 	    	return false;
+	    
 	    return $open;
 	}
 	
@@ -376,10 +380,10 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	    $topPost = $this->topPost($post);
 	    
 	    if ($topPost === null)	//	 可能是inherit 但post_parent=0
-	    	return;
+	    	return $value;
 	    
 	    if ( !( is_singular() && ( have_comments() || 'open' == $topPost->comment_status ) ) ) {
-	        return;
+	        return $value;
 	    }
 	    
 	    if (get_post_meta($topPost->ID, 'duoshuo_status', true) == 'disabled')
