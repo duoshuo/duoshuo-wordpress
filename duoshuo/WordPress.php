@@ -233,7 +233,12 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		}
 	}
 	
-	public function bindUser($user_login, $user){
+	public function bindUser($user_login, $user = null){
+		//	早期版本wp_login接口只有第一个参数
+		if (empty($user)){
+			$user = get_user_by('login', $user_login);
+		}
+		
 		if (isset($_POST['duoshuo_user_id'])){
 			$query = array(
 				'master_user_id'=>	$_POST['duoshuo_user_id'],
