@@ -121,12 +121,12 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
 	public function normalizeUrl($url){
 		if (strpos($url, '/') === 0){
-			$site_url = get_option('site_url');
+			$siteurl = get_option('siteurl');
 			
-			if (false !== $pos = strpos($site_url, '/', 8))
-				$site_url = substr($site_url, 0, $pos);
+			if (strlen($siteurl) >=8 && (false !== $pos = strpos($siteurl, '/', 8)))
+				$siteurl = substr($siteurl, 0, $pos);
 			
-			return $site_url . $url;
+			return $siteurl . $url;
 		}
 		else{
 			return $url;
