@@ -214,12 +214,11 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 				exit;
 			}
 			else{
+				$client = new Duoshuo_Client($this->shortName, $this->secret, null, $token['access_token']);
+				$response = $client->request('GET', 'users/profile', array('user_id'=> $token['user_id']));
+				
 				if (get_option('users_can_register')){//	如果站点开启注册
-					
 					// 要求用户输入帐号进行绑定
-					$client = new Duoshuo_Client($this->shortName, $this->secret, null, $token['access_token']);
-					$response = $client->request('GET', 'users/profile', array('user_id'=> $token['user_id']));
-					
 					$query = array(
 							'action'			=>	'register',
 							//'duoshuo_user_id'	=>	$token['user_id'],
@@ -227,7 +226,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 					);
 					
 					$this->duoshuoUserId = $token['user_id'];
-				
+					
 					$registerUrl = site_url( 'wp-login.php?' . http_build_query($query), 'login' );
 					$error = '<img src="' . $response['response']['avatar_url'] . '" width="50" height="50" style="float:left;margin: 0 0.5em 0 0;" />'
 						. '<strong>' . esc_html($response['response']['name']) . '</strong>，欢迎！<br />'

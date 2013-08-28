@@ -26,7 +26,7 @@ function loadDuoshuoThemes(json){
 		var html = '';
 		$.each(json.response, function(key, theme){
 			html += '<li>'
-				+ '<img src="' + theme.screenshot + '" width="300" height="225" />'
+				+ '<img src="' + theme.screenshot + '" width="300" height="225" style="border:1px #CCC solid;" />'
 				+ '<h3>' + theme.name + '</h3>'
 				+ '<p>作者：<a href="' + theme.author_url + '" target="_blank">' + theme.author_name + '</a></p>'
 				+ '<div class="action-links">'
