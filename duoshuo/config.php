@@ -1,3 +1,4 @@
+<link rel="stylesheet" href="<?php echo $this->pluginDirUrl; ?>styles.css" type="text/css" />
 <div class="wrap">
 <?php echo screen_icon();?><h2>注册站点</h2>
 <?php

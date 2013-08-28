@@ -2,7 +2,7 @@
 class Duoshuo_Abstract {
 	const DOMAIN = 'duoshuo.com';
 	const STATIC_DOMAIN = 'static.duoshuo.com';
-	const VERSION = '1.0';
+	const VERSION = '1.1';
 	
 	/**
 	 * 
@@ -169,7 +169,7 @@ class Duoshuo_Abstract {
 		if (function_exists('hash_hmac'))
 			return hash_hmac('sha256', $data, $key, true);
 		
-		if (!class_exists('nanoSha2'))
+		if (!class_exists('nanoSha2', false))
 			require 'nanoSha2.php';
 		
 		$nanoSha2 = new nanoSha2();

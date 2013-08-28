@@ -17,7 +17,7 @@ if (!headers_sent()) {
 	header('Content-Type: text/javascript; charset=utf-8');
 }
 
-if (!class_exists('Duoshuo_WordPress')){
+if (!class_exists('Duoshuo_WordPress', false)){
 	$response = array(
 		'code'			=>	30,
 		'errorMessage'	=>	'Duoshuo plugin hasn\'t been activated.'

@@ -1,7 +1,7 @@
 <?php
 class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
-	const VERSION = '1.0';
+	const VERSION = '1.1';
 	
 	protected static $_instance = null;
 	
@@ -37,6 +37,8 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		'duoshuo_comments_wrapper_intro'=>	'',
 		'duoshuo_comments_wrapper_outro'=>	'',
 		'duoshuo_last_log_id'			=>	0,
+		'duoshuo_theme'					=>	'default',
+		'duoshuo_style_patch'			=>	1,
 	);
 	
 	protected function __construct(){
@@ -119,6 +121,10 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			: true;
 	}
 	
+	public function connectFailed(){
+		update_option('duoshuo_connect_failed', time());
+	}
+	
 	public function normalizeUrl($url){
 		if (strpos($url, '/') === 0){
 			$siteurl = get_option('siteurl');
@@ -179,7 +185,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			$this->userLogin($token);
 		}
 		catch(Duoshuo_Exception $e){
-			update_option('duoshuo_connect_failed', time());
+			$this->connectFailed();
 		}
 	}
 	
@@ -203,31 +209,37 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			}
 		}
 		else{
-			if (get_option('users_can_register')){//	如果站点开启注册
-				
-				// 要求用户输入帐号进行绑定
-				$client = new Duoshuo_Client($this->shortName, $this->secret, null, $token['access_token']);
-				$response = $client->request('GET', 'users/profile', array('user_id'=> $token['user_id']));
-				
-				$query = array(
-					'action'			=>	'register',
-					'duoshuo_user_id'	=>	$token['user_id'],
-					'duoshuo_access_token'=>$token['access_token'],
-				);
-				
-				$this->duoshuoUserId = $token['user_id'];
-				
-				$registerUrl = site_url( 'wp-login.php?' . http_build_query($query), 'login' );
-				$error = esc_html($response['response']['name']) . '，请输入你的本站帐号进行帐号绑定；<br />如果你还没有本站帐号，请<a href="' . esc_url($registerUrl) . '">注册</a>';
+			if (isset($_GET['redirect_to']) && $_GET['redirect_to'] !== admin_url()){//	如果是在内容页登录，无论如何都把用户带回内容页
+				wp_redirect($_GET['redirect_to']);
+				exit;
 			}
-			else{//	如果站点未开启注册
-				//	把用户带回入口页
-				if (isset($_GET['redirect_to']) && $_GET['redirect_to'] !== admin_url()){
-					wp_redirect($_GET['redirect_to']);
-					exit;
+			else{
+				if (get_option('users_can_register')){//	如果站点开启注册
+					
+					// 要求用户输入帐号进行绑定
+					$client = new Duoshuo_Client($this->shortName, $this->secret, null, $token['access_token']);
+					$response = $client->request('GET', 'users/profile', array('user_id'=> $token['user_id']));
+					
+					$query = array(
+							'action'			=>	'register',
+							//'duoshuo_user_id'	=>	$token['user_id'],
+							'duoshuo_access_token'=>$token['access_token'],
+					);
+					
+					$this->duoshuoUserId = $token['user_id'];
+				
+					$registerUrl = site_url( 'wp-login.php?' . http_build_query($query), 'login' );
+					$error = '<img src="' . $response['response']['avatar_url'] . '" width="50" height="50" style="float:left;margin: 0 0.5em 0 0;" />'
+						. '<strong>' . esc_html($response['response']['name']) . '</strong>，欢迎！<br />'
+						. '请绑定已注册的本站帐号；<br />'
+						. '如果你还没有本站帐号，请<a href="' . esc_url($registerUrl) . '">注册</a>';
 				}
-				else{	//如果是从wp-login页面发起的请求，就不触发重定向
-					$error = '你授权的社交帐号没有和本站的用户帐号绑定；<br />如果你是本站注册用户，请先登录之后绑定社交帐号';
+				else{//	如果站点未开启注册
+					//如果是从wp-login页面发起的请求，就不触发重定向
+					$error = '<img src="' . $response['response']['avatar_url'] . '" width="50" height="50" style="float:left;margin: 0 0.5em 0 0;" />'
+						. '<strong>' . esc_html($response['response']['name']) . '</strong>，欢迎！<br />'
+						. '你还没有和本站的用户帐号绑定，<br />'
+						. '如果你已经注册，请先登录之后绑定社交帐号';
 				}
 			}
 		}
@@ -274,7 +286,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			}
 		}
 		catch(Duoshuo_Exception $e){
-			update_option('duoshuo_connect_failed', time());
+			$this->connectFailed();
 		}
 	}
 	
@@ -322,8 +334,53 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		include dirname(__FILE__) . '/manage.php';
 	}
 	
+	public function themes(){
+		include dirname(__FILE__) . '/themes.php';
+	}
+	
 	public function preferences(){
 		include dirname(__FILE__) . '/preferences.php';
+	}
+	
+	public function checkDependency($name){
+		global $wp_version;
+		
+		switch ($name){
+			case 'php':
+				return array(PHP_VERSION, version_compare(PHP_VERSION, '5.3.0', '<') ? '建议升级php到5.3或以上' : true);
+			case 'wordpress':
+				return array($wp_version, version_compare($wp_version, '3.3.0', '<') ? '建议升级WordPress到3.3或以上' : true);
+			case 'json':
+				if (!extension_loaded('json'))
+					return array('缺少json扩展', '安装并启用JSON扩展');
+				return array(true, true);
+			case 'curl':
+				if (!extension_loaded('curl'))
+					return array('缺少curl扩展', '安装并启用curl扩展');
+				if (!function_exists('curl_init'))
+					return array('curl_init()被禁用', '启用curl_init()函数');
+				if (!function_exists('curl_exec'))
+					return array('curl_exec()被禁用', '启用curl_exec()函数');
+				return array(true, true);
+			case 'fopen':
+				if (!function_exists('fopen'))
+					return array('fopen()被禁用', '启用fopen()函数');
+				if (!function_exists('ini_get'))
+					return array('ini_get()被禁用', '启用ini_get()函数');
+				if (!ini_get('allow_url_fopen'))
+					return array('allow_url_fopen被关闭', '在php.ini中设置allow_url_fopen = On');
+				return array(true, true);
+			case 'fsockopen':
+				if (!function_exists('fsockopen'))
+					return array('fsockopen()被禁用', '启用fsockopen()函数');
+				return array(true, true);
+			case 'hash_hmac':
+				if (!function_exists('hash_hmac'))
+					return array('hash_hmac()不存在', '升级php到5.3或以上');
+				return array(true, true);
+			default:
+				return array(true, true);
+		}
 	}
 	
 	public function settings(){
@@ -409,7 +466,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		    	$this->exportComments($comments);
 		    }
 		    catch(Duoshuo_Exception $e){
-		    	update_option('duoshuo_connect_failed', time());
+		    	$this->connectFailed();
 			}
 	    }
 	    
@@ -501,8 +558,16 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 				'logout'=>	htmlspecialchars_decode(wp_logout_url(), ENT_QUOTES),
 			),
 		);
+		
+		if ($theme = $this->getOption('theme'))
+			$query['theme'] = $theme;
+		
+		if ($this->getOption('style_patch'))
+			$query['stylePatch'] = 'wordpress/' . str_replace(' ', '_', function_exists('wp_get_theme') ? wp_get_theme()->get('Name') : get_current_theme());
+		
 		if (!empty($options))
 			$query['options'] = $options;
+		
 		return $query;
 	}
 	
@@ -541,19 +606,13 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 </script><?php
 	}
 	
-	/** 不再替换原生最新评论widget
-	<script type="text/javascript">
-		DUOSHUO.RecentComments('.widget_recent_comments #recentcomments', {template : 'wordpress'});
-	</script>
-	 */
-	
 	public function loginForm(){
 		if ($_REQUEST['action'] === 'duoshuo_login' && isset($this->duoshuoUserId)){ // 登录后发现没有本站帐号，输入帐号进行绑定 ?>
 			<input type="hidden" name="duoshuo_user_id" value="<?php echo $this->duoshuoUserId;?>" />
 <?php 
 		}
 		elseif (isset($_REQUEST['duoshuo_access_token'])){ ?>
-			<input type="hidden" name="duoshuo_access_token" value="<?php echo $_REQUEST['duoshuo_access_token'];?>" />
+			<label><input type="checkbox" name="duoshuo_access_token" value="<?php echo $_REQUEST['duoshuo_access_token'];?>" checked="checked" /> 注册后和多说帐号绑定</label>
 <?php 
 		}
 		else{
@@ -686,7 +745,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			}
 		}
 		catch(Duoshuo_Exception $e){
-			update_option('duoshuo_connect_failed', time());
+			$this->connectFailed();
 		}
 	}
 	/*
@@ -708,7 +767,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			$this->exportUsers(array($userData));
 		}
 		catch(Duoshuo_Exception $e){
-			update_option('duoshuo_connect_failed', time());
+			$this->connectFailed();
 		}
 	}
 	
@@ -744,7 +803,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 				update_post_meta($post->ID, 'duoshuo_thread_id', $response['response']['thread_id']);
 		}
 		catch(Duoshuo_Exception $e){
-			update_option('duoshuo_connect_failed', time());
+			$this->connectFailed();
 		}
 	}
 	
@@ -829,7 +888,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 			'source'	=>	'wordpress',
 		);
 		
-		if (!class_exists('nggLoader') || class_exists('nggRewrite'))
+		if (!class_exists('nggLoader', false) || class_exists('nggRewrite', false))
 			$params['filtered_content'] = str_replace(']]>', ']]&gt;', apply_filters('the_content', $post->post_content));
 		
 		if (function_exists('get_post_thumbnail_id')){	//	WordPress 2.9开始支持
@@ -1218,7 +1277,7 @@ function getSyncOptionsCallback(rsp){
 		}
 		catch(Duoshuo_Exception $e){
 			if ($e->getCode() == Duoshuo_Exception::REQUEST_TIMED_OUT){
-				$this->updateOption('connect_failed', time());
+				$this->connectFailed();
 				$this->updateOption('sync_lock',  0);
 			}
 			
@@ -1235,7 +1294,7 @@ function getSyncOptionsCallback(rsp){
 	}
 	
 	public function pluginActionLinks($links, $file) {
-		if (empty($this->shortName) || empty($this->secret) || !is_numeric($this->getOption('synchronized')))
+		if (empty($this->shortName) || empty($this->secret)) // 如果已经设置好了站点信息，就不显示安装 || !is_numeric($this->getOption('synchronized'))
 	    	array_unshift($links, '<a href="' . admin_url('admin.php?page=duoshuo') . '">'.__('Install').'</a>');
 		else
 			array_unshift($links, '<a href="' . admin_url('admin.php?page=duoshuo-settings') . '">'.__('Settings').'</a>');

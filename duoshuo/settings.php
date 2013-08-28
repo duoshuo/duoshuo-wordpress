@@ -51,6 +51,14 @@
 				<label><input type="checkbox" name="duoshuo_postpone_print_scripts" value="1" <?php if (get_option('duoshuo_postpone_print_scripts')) echo ' checked="checked"';?> />在网页底部才插入多说核心脚本embed.js</label></td>
 		</tr>
 		<tr valign="top">
+			<th scope="row">主题适配</th>
+			<td>
+				<input type="hidden" name="duoshuo_style_patch" value="0">
+				<label><input type="checkbox" name="duoshuo_style_patch" value="1" <?php if (get_option('duoshuo_style_patch')) echo ' checked="checked"';?> />自动适配当前WordPress主题</label>
+				<p class="description"></p>
+			</td>
+		</tr>
+		<tr valign="top">
 			<th scope="row">评论数修正</th>
 			<td>
 				<input type="hidden" name="duoshuo_cc_fix" value="0">
@@ -101,6 +109,40 @@
 	<input type="hidden" name="action" value="duoshuo_reset" />
 	<p>如果你希望本博客和其他多说站点进行绑定，或者创建新的多说站点，点此 <input type="submit" class="button" value="清空配置" name="duoshuo_reset" /></p>
 </form>
+</div>
+
+<div>
+	<h3>环境依赖检查</h3>
+	<table class="ds-dependencies">
+		<thead>
+			<tr>
+				<th>依赖</th>
+				<th>状态</th>
+				<th>结果</th>
+			</tr>
+		</thead>
+		<tbody>
+		<?php
+		$dependencies = array(
+			'php'		=>	'php版本',
+			'wordpress'	=>	'WordPress版本',
+			'json'		=>	'json扩展',
+			'curl'		=>	'curl扩展',
+			'fopen'		=>	'fopen()',
+			'fsockopen'	=>	'fsockopen()',
+			'hash_hmac'	=>	'hash_hmac()',
+		);
+		foreach($dependencies as $key => $name):
+			list($status, $result) = $this->checkDependency($key);?>
+			<tr>
+				<th><?php echo $name;?></th>
+				<td><?php echo $status === true ? '支持' : $status;?></td>
+				<td><?php echo $result === true ? '<span class="ds-icon-yes">OK</span>' : $result;?></td>
+			</tr>
+		<?php endforeach;?>
+		</tbody>
+	</table>
+	<p class="description">curl扩展、fopen()、fsockopen()只需支持一个即可，推荐使用curl扩展</p>
 </div>
 
 <h3>常见问题和参考链接</h3>

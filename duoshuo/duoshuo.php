@@ -4,7 +4,7 @@ Plugin Name: 多说
 Plugin URI: http://wordpress.org/extend/plugins/duoshuo/
 Description: 追求最佳用户体验的社会化评论框，为中小网站提供“新浪微博、QQ、人人、豆瓣等多帐号登录并评论”功能。“多说”帮你搭建更活跃，互动性更强的评论平台，功能强大且永久免费。
 Author: 多说网
-Version: 1.0
+Version: 1.1
 Author URI: http://duoshuo.com/
 */
 
@@ -229,7 +229,7 @@ function duoshuo_add_pages() {
 				add_submenu_page(
 					'duoshuo',
 					'多说评论管理',
-					'多说评论',
+					'评论管理',
 					'moderate_comments',
 					'duoshuo-manage',
 					array($duoshuoPlugin,'manage')
@@ -245,6 +245,14 @@ function duoshuo_add_pages() {
 					$duoshuoPlugin->pluginDirUrl . 'images/menu-icon.png' 
 				);
 			}
+			add_submenu_page(
+		         'duoshuo',//$parent_slug
+		         '主题设置',//page_title
+		         '主题设置',//menu_title
+		         'manage_options',//权限
+		         'duoshuo-themes',//menu_slug
+		         array($duoshuoPlugin, 'themes')//function
+		    );
 			add_submenu_page(
 		         'duoshuo',//$parent_slug
 		         '个性化设置',//page_title
@@ -320,6 +328,9 @@ function duoshuo_request_handler(){
 			case 'duoshuo':
 				if (isset($_GET['duoshuo_connect_site']))
 					$duoshuoPlugin->connectSite();
+				if (isset($_GET['duoshuo_theme'])){
+					update_option('duoshuo_theme', $_GET['duoshuo_theme']);
+				}
 				break;
 			default:
 		}

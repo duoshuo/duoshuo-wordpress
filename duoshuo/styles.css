@@ -27,3 +27,28 @@
 #icon-duoshuo{
 	background: url("images/head-icon.gif") no-repeat scroll 0 4px transparent;
 }
+
+.ds-icon-yes{
+	display:inline-block;
+	background: url("images/icon.gif") no-repeat 0 -10px transparent;
+	width: 15px;
+	height: 12px;
+	text-indent:-9999px;
+}
+.ds-icon-no{
+	display:inline-block;
+	background: url("images/icon.gif") no-repeat 0 -22px transparent;
+	width: 15px;
+	height: 12px;
+	text-indent:-9999px;
+}
+
+.ds-dependencies{
+	width:500px;
+	border-collapse: collapse;
+	border: 1px solid #ebebeb;
+}
+.ds-dependencies td, .ds-dependencies th {padding: 8px; text-align:left;}
+.ds-dependencies thead tr{background-color : #ebebeb;}
+.ds-dependencies tbody tr:nth-child(even){background-color : #ebebeb;}
+.ds-dependencies tbody tr:nth-child(odd){background-color : #FFF;}
