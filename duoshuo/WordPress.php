@@ -139,6 +139,14 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		}
 	}
 	
+	public function allowedHtml($tags, $context = ''){
+		if (!isset($tags['img']))
+			$tags['img'] = array();
+	
+		$tags['img']['src'] = true;
+		return $tags;
+	}
+	
 	public function setJwtCookie($logged_in_cookie, $expire, $expiration, $user_id, $scheme){
 		$jwt = $this->jwt($user_id);
 		$secure = $scheme == 'secure_auth';
