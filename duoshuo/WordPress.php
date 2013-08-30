@@ -996,6 +996,10 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 	public function createPost($post){
 		global $wpdb;
 		
+		//	将img加到白名单中，仅对WordPress 3.5.0以后有效
+		if (!has_filter('wp_kses_allowed_html', array($this, 'allowedHtml')))
+			add_filter('wp_kses_allowed_html', array($this, 'allowedHtml'));
+		
 		static $approvedMap = array(
 			'pending'	=>	'0',
 			'approved'	=>	'1',

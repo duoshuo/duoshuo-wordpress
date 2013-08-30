@@ -20,9 +20,6 @@ class Duoshuo_LocalServer{
 	 * @param array $input
 	 */
 	public function sync_log($input = array()){
-		//	将img加到白名单中，仅对WordPress 3.5.0以后有效
-		add_filter('wp_kses_allowed_html', array($this->plugin, 'allowedHtml'));
-		
 		$syncLock = $this->plugin->getOption('sync_lock');//检查是否正在同步评论 同步完成后该值会置0
 		if($syncLock && $syncLock > time()- 300){//正在或5分钟内发生过写回但没置0
 			$this->response = array(

@@ -247,14 +247,6 @@ function duoshuo_add_pages() {
 			}
 			add_submenu_page(
 		         'duoshuo',//$parent_slug
-		         '主题设置',//page_title
-		         '主题设置',//menu_title
-		         'manage_options',//权限
-		         'duoshuo-themes',//menu_slug
-		         array($duoshuoPlugin, 'themes')//function
-		    );
-			add_submenu_page(
-		         'duoshuo',//$parent_slug
 		         '个性化设置',//page_title
 		         '个性化设置',//menu_title
 		         'manage_options',//权限
@@ -262,6 +254,14 @@ function duoshuo_add_pages() {
 		         array($duoshuoPlugin, 'preferences')//function
 		    );
 			add_submenu_page(
+		         'duoshuo',//$parent_slug
+		         '主题设置',//page_title
+		         '主题设置',//menu_title
+		         'manage_options',//权限
+		         'duoshuo-themes',//menu_slug
+		         array($duoshuoPlugin, 'themes')//function
+		    );
+		    add_submenu_page(
 		         'duoshuo',//$parent_slug
 		         '高级选项',//page_title
 		         '高级选项',//menu_title
