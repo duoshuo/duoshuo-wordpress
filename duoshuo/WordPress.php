@@ -614,7 +614,7 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
 	}
 	
 	public function loginForm(){
-		if ($_REQUEST['action'] === 'duoshuo_login' && isset($this->duoshuoUserId)){ // 登录后发现没有本站帐号，输入帐号进行绑定 ?>
+		if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'duoshuo_login' && isset($this->duoshuoUserId)){ // 登录后发现没有本站帐号，输入帐号进行绑定 ?>
 			<input type="hidden" name="duoshuo_user_id" value="<?php echo $this->duoshuoUserId;?>" />
 <?php 
 		}
