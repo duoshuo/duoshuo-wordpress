@@ -588,7 +588,26 @@ var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
 duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
 </script>
+<?php
+if($_SERVER['HTTPS'] === 1){  //Apache	
+?>
+<script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
+<?php
+ } elseif($_SERVER['HTTPS'] === 'on'){ //IIS
+?>
+<script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
+<?php
+ } elseif($_SERVER['SERVER_PORT'] == 443){ //其他
+?>
+<script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
+<?php
+ } else {
+?>
 <script type="text/javascript" src="http://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
+<?php
+ }
+?>
+
 <?php 
 	}
 	
@@ -605,9 +624,11 @@ var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
 duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
 (function() {
-    var ds = document.createElement('script'); ds.type = 'text/javascript'; ds.async = true;
+    var ds = document.createElement('script'); 
+    ds.type = 'text/javascript'; 
+    ds.async = true;
     ds.charset = 'UTF-8';
-    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
 })();
 </script><?php
