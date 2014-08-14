@@ -578,6 +578,23 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		return $query;
 	}
 	
+	/*
+	* 检测链接是否是SSL连接
+	* @return bool
+	*/
+	public function isSSL() {
+		if(!isset($_SERVER['HTTPS']))
+		return FALSE;
+		if($_SERVER['HTTPS'] === 1){  //Apache
+			return TRUE;
+		}elseif($_SERVER['HTTPS'] === 'on'){ //IIS
+			return TRUE;
+		}elseif($_SERVER['SERVER_PORT'] == 443){ //其他
+			return TRUE;
+		}
+		return FALSE;
+	}
+
 	public function appendScripts(){
 		if ($this->_scriptsPrinted)
 			return;
@@ -589,25 +606,16 @@ duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.h
 duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
 </script>
 <?php
-if($_SERVER['HTTPS'] === 1){  //Apache	
+if($this->isSSL()){	
 ?>
 <script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
 <?php
- } elseif($_SERVER['HTTPS'] === 'on'){ //IIS
-?>
-<script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
-<?php
- } elseif($_SERVER['SERVER_PORT'] == 443){ //其他
-?>
-<script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
-<?php
- } else {
+} else {
 ?>
 <script type="text/javascript" src="http://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
 <?php
- }
+}
 ?>
-
 <?php 
 	}
 	
