@@ -9,6 +9,7 @@ Author URI: http://duoshuo.com/
 */
 
 define('DUOSHUO_PLUGIN_PATH', dirname(__FILE__));
+define('DUOSHUO_RES_PERFIX',(@$_SERVER['HTTPS'] == "on")?'https://':'http://');
 
 if (version_compare(PHP_VERSION, '5.0.0', '<')){
 	if(is_admin()){

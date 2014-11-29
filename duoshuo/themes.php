@@ -43,6 +43,6 @@ function loadDuoshuoThemes(json){
 }
 </script>
 
-<script src="http://<?php echo $this->shortName;?>.duoshuo.com/api/sites/themes.jsonp?callback=loadDuoshuoThemes"></script>
+<script src="<?php echo DUOSHUO_RES_PERFIX.$this->shortName;?>.duoshuo.com/api/sites/themes.jsonp?callback=loadDuoshuoThemes"></script>
 
 </div>
