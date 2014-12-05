@@ -626,7 +626,7 @@ duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.
     ds.type = 'text/javascript'; 
     ds.async = true;
     ds.charset = 'UTF-8';
-    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.src = ((document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js');
     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
 })();
 </script><?php
