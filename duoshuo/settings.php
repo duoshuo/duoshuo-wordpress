@@ -194,9 +194,9 @@ jQuery(function(){
 		handler = function(e){
 			var service = this.className.match(/ds\-(\w+)/)[1],
 				message = <?php echo json_encode('我的' . get_option('blogname') . '（' .get_option('siteurl') . '）装了');?> + duoshuoName[service] + ' 评论插件，用微博、QQ、人人帐号就能登录评论了，很给力。来试试吧！',
-				image = 'http://static.duoshuo.com/images/top.jpg',
+				image = <?php echo DUOSHUO_RES_PERFIX;?>.'static.duoshuo.com/images/top.jpg',
 				title = '多说评论插件',
-				url = 'http://duoshuo.com';
+				url = <?php echo DUOSHUO_RES_PERFIX;?>'duoshuo.com';
 			window.open('http://<?php echo $this->shortName . '.' . self::DOMAIN;?>/share-proxy/?service=' + service + '&url=' + encodeURIComponent(url) + '&message=' + encodeURIComponent(message) + '&title=' + encodeURIComponent(title) + '&images=' + image,
 				'_blank',
 				'height=550,width=600,top=0,left=0,toolbar=no,menubar=no,resizable=yes,location=yes,status=no');

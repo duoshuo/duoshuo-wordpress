@@ -11,5 +11,5 @@ $params = $this->packageOptions() + array(
 	'sync_log'	=>	1,
 );
 ?>
-<iframe id="duoshuo-remote-window" src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" style="width:100%;height:580px;"></iframe>
+<iframe id="duoshuo-remote-window" src="<?php echo DUOSHUO_RES_PERFIX . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" style="width:100%;height:580px;"></iframe>
 </div>
