@@ -605,7 +605,7 @@ var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
 duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
 </script>
-<script type="text/javascript" src="<?php $this->isSSL()?'https':'http'?>://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
+<script type="text/javascript" src="<?php echo($this->isSSL()?'https':'http');?>://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
 <?php 
 	}
 	
