@@ -2,7 +2,7 @@
 if (empty($_GET['service']))
 	return;
 
-$endpoint = 'http://duoshuo.com/login-callback/' . strtolower(trim($_GET['service'])) . '/';
+$endpoint =  (is_ssl()?'https':'http').'//duoshuo.com/login-callback/' . strtolower(trim($_GET['service'])) . '/';
 
 unset($_GET['service']);
 

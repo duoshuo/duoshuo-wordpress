@@ -10,6 +10,9 @@ $params = $this->packageOptions() + array(
 	'user_name'	=>	$user->display_name,
 	'sync_log'	=>	1,
 );
+
+$adminUrl = is_ssl() ? 'https://' : 'http://';
+$adminUrl .=  self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&')
 ?>
-<iframe id="duoshuo-remote-window" src="<?php echo 'http://' . self::DOMAIN . '/connect-site/?'. http_build_query($params, null, '&');?>" style="width:100%;height:580px;"></iframe>
+<iframe id="duoshuo-remote-window" src="<?php echo $adminUrl;?>" style="width:100%;height:580px;"></iframe>
 </div>

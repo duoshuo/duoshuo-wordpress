@@ -1,7 +1,7 @@
 <?php
 class Duoshuo_WordPress extends Duoshuo_Abstract{
 	
-	const VERSION = '1.1';
+	const VERSION = '1.2';
 	
 	protected static $_instance = null;
 	
@@ -182,7 +182,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		try{
 			$keys = array(
 					'code'	=> $_GET['code'],
-					'redirect_uri' => 'http://duoshuo.com/login-callback/',
+					'redirect_uri' => (is_ssl()?'https':'http').'://duoshuo.com/login-callback/',
 			);
 			
 			$token = $this->getClient()->getAccessToken('code', $keys);
@@ -265,7 +265,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 				'redirect_uri'	=>	admin_url(),
 			);
 			
-			wp_redirect('http://duoshuo.com/merge/?'. http_build_query($query, null, '&'));
+			wp_redirect((is_ssl()?'https':'http').'://duoshuo.com/merge/?'. http_build_query($query, null, '&'));
 			exit;
 		}
 	}
@@ -403,6 +403,7 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 	}
 	
 	public function reset(){
+        global $wpdb;
 		//delete_option('duoshuo_short_name');
 		
 		// 删除状态有关的值
@@ -424,7 +425,10 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 			delete_metadata('comment', 0, 'duoshuo_parent_id', '', true);
 			delete_metadata('comment', 0, 'duoshuo_post_id', '', true);
 		}
-		
+
+        //清空comment_agent字段
+        $wpdb->get_results($wpdb->prepare("update wp_comments set comment_agent='' where comment_agent LIKE '%%Duoshuo/%%'"));
+
 		$redirect_url = add_query_arg('message', 'reset', admin_url('admin.php?page=duoshuo'));
 		wp_redirect($redirect_url);
 		exit;
@@ -578,23 +582,6 @@ class Duoshuo_WordPress extends Duoshuo_Abstract{
 		return $query;
 	}
 	
-	/*
-	* 检测链接是否是SSL连接
-	* @return bool
-	*/
-	public function isSSL() {
-		if(!isset($_SERVER['HTTPS']))
-		return FALSE;
-		if($_SERVER['HTTPS'] === 1){  //Apache
-			return TRUE;
-		}elseif($_SERVER['HTTPS'] === 'on'){ //IIS
-			return TRUE;
-		}elseif($_SERVER['SERVER_PORT'] == 443){ //其他
-			return TRUE;
-		}
-		return FALSE;
-	}
-
 	public function appendScripts(){
 		if ($this->_scriptsPrinted)
 			return;
@@ -605,20 +592,13 @@ var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
 duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
 </script>
-<?php
-if($this->isSSL()){	
-?>
-<script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
-<?php
-} else {
-?>
-<script type="text/javascript" src="http://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
-<?php
-}
-?>
-<?php 
+<?php if( is_ssl() ){ ?>
+    <script type="text/javascript" src="https://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
+<?php } else { ?>
+    <script type="text/javascript" src="http://static.<?php echo self::DOMAIN;?>/embed.js" charset="UTF-8" async="async"></script>
+<?php }
 	}
-	
+
 	/**
 	 * 在wp_print_scripts 没有执行的时候执行最传统的代码
 	 */
@@ -632,8 +612,8 @@ var duoshuoQuery = <?php echo json_encode($this->buildQuery());?>;
 duoshuoQuery.sso.login += '&redirect_to=' + encodeURIComponent(window.location.href);
 duoshuoQuery.sso.logout += '&redirect_to=' + encodeURIComponent(window.location.href);
 (function() {
-    var ds = document.createElement('script'); 
-    ds.type = 'text/javascript'; 
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';
     ds.async = true;
     ds.charset = 'UTF-8';
     ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
@@ -1227,7 +1207,7 @@ window.parent.location = <?php echo json_encode(admin_url('admin.php?page=duoshu
 		if ($post->ID)
 			$query['thread_key'] = $post->ID;
 
-		$jsonpUrl = 'http://' . $this->shortName . '.duoshuo.com/api/users/syncOptions.jsonp?' . http_build_query($query, null, '&');
+        $jsonpUrl = (is_ssl()?'https':'http').'://' . $this->shortName . '.duoshuo.com/api/users/syncOptions.jsonp?' . http_build_query($query, null, '&');
 		?>
 <script>
 function getSyncOptionsCallback(rsp){
@@ -1263,7 +1243,7 @@ function getSyncOptionsCallback(rsp){
 				+ serviceNames[service]
 				+ (info.avatar_url ? '<img src="' + info.avatar_url + '" alt="' + info.name + '" style="width:16px;height:16px;" />' : '')
 				+ info.name
-				+ (info.expired ? '(<a href="http://duoshuo.com/settings/accounts/" target="_blank">已过期，请更新授权</a>)' : '')
+				+ (info.expired ? '(<a href="<?= is_ssl()?'https':'http' ?>://duoshuo.com/settings/accounts/" target="_blank">已过期，请更新授权</a>)' : '')
 				+ '</label>\
 			</li>';
 		});
@@ -1275,7 +1255,9 @@ function getSyncOptionsCallback(rsp){
 	jQuery('#duoshuo-sidebox .inside').html(html);
 }
 (function() {
-	var ds = document.createElement('script'); ds.type = 'text/javascript'; ds.async = true;
+	var ds = document.createElement('script');
+    ds.type = 'text/javascript';
+    ds.async = true;
 	ds.charset = 'UTF-8';
 	ds.src = '<?php echo $jsonpUrl;?>';
 	(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);

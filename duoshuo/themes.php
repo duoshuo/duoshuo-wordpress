@@ -43,6 +43,11 @@ function loadDuoshuoThemes(json){
 }
 </script>
 
-<script src="http://<?php echo $this->shortName;?>.duoshuo.com/api/sites/themes.jsonp?callback=loadDuoshuoThemes"></script>
+<?php
+$adminUrl = is_ssl() ? 'https://' : 'http://';
+$adminUrl .= $this->shortName .".duoshuo.com/api/sites/themes.jsonp?callback=loadDuoshuoThemes";
+
+?>
+<script src="<?php echo $adminUrl;?>"></script>
 
 </div>

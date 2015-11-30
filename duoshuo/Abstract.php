@@ -2,7 +2,7 @@
 class Duoshuo_Abstract {
 	const DOMAIN = 'duoshuo.com';
 	const STATIC_DOMAIN = 'static.duoshuo.com';
-	const VERSION = '1.1';
+	const VERSION = '1.2';
 	
 	/**
 	 * 

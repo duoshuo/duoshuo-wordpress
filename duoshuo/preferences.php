@@ -3,7 +3,10 @@
 $params = array(
 	'jwt'	=>	$this->jwt(),
 );
-$adminUrl = 'http://' . $this->shortName . '.' . self::DOMAIN . '/admin/settings/?' . http_build_query($params, null, '&');
+
+$adminUrl = is_ssl() ? 'https://' : 'http://';
+$adminUrl .= $this->shortName . '.' . self::DOMAIN . '/admin/settings/?' . http_build_query($params, null, '&');
+
 ?>
 <div class="wrap">
 <?php screen_icon(); ?>

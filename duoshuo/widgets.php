@@ -381,7 +381,7 @@ class Duoshuo_Widget_Qqt_Follow extends WP_Widget {
 			'allowtransparency'=>'true',
 			'marginheight'=>0,
 			'marginwidth'=>	0,
-			'src'		=>	'http://follow.v.t.qq.com/index.php?' . http_build_query($params, null, '&'),
+			'src'		=> (is_ssl()?'https':'http').'://follow.v.t.qq.com/index.php?' . http_build_query($params, null, '&'),
 		);
 		
 		$output .= '<iframe '; 
